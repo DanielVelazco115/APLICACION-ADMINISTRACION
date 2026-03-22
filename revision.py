@@ -6,8 +6,30 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font
 from utilidades import normalizar_nombre, pintar_encabezados
 
+def validar_formula(formula, depto, concepto):
+    if not formula or formula.strip() in ["=SUM()", "=", ""]:
+        print(f"[ADVERTENCIA] Fórmula inválida en {depto} - {concepto}. Se reemplaza por 0.")
+        return "0"
+    print(f"[OK] {depto} - {concepto}: {formula}")
+    return formula
+
+def construir_refs(columnas, deptos, filas_totales):
+    refs = []
+    missing = []
+    for d in deptos:
+        d_norm = normalizar_nombre(d)
+        if d_norm in filas_totales:
+            fila = filas_totales[d_norm]
+            for c in columnas:
+                refs.append(f"'Resultado Consolidado'!{c}{fila}")
+        else:
+            missing.append(d)
+    return refs, missing
+
+def fila_concepto_safe(filas_conceptos, depto):
+    return filas_conceptos.get(normalizar_nombre(depto), {})
+
 def consolidar(ruta_principal, ruta_nombres, carpeta_salida):
-    # Abrir archivo principal
     libro = openpyxl.load_workbook(ruta_principal)
 
     # Detectar hojas EMA/EBA
@@ -116,13 +138,14 @@ def consolidar(ruta_principal, ruta_nombres, carpeta_salida):
         resultado.append(fila_formula)
 
         fila_total = resultado.max_row
-        filas_totales[depto] = fila_total
+        clave_norm = normalizar_nombre(depto)
+        filas_totales[clave_norm] = fila_total
 
         resultado.append([])
         resultado.append([])
         resultado.append([])
 
-    # Tablas verticales
+    # Bloque inicial de tablas verticales
     conceptos = [
         "INFONAVIT","SAR","CESANTÍA PATRONAL",
         "CESANTÍA OBRERO","IMSS PATRONAL","IMSS OBRERO","TOTAL"
@@ -136,47 +159,225 @@ def consolidar(ruta_principal, ruta_nombres, carpeta_salida):
         "IMSS OBRERO": ["K","M","O","R"]
     }
 
+    # Guardaremos además la columna de valores donde se escriben los conceptos de cada depto
+    depto_col_valor = {}  # depto_norm -> letra de columna donde se escriben los valores (col_letra2)
+
+    filas_conceptos = defaultdict(dict)
+
     col_inicio = 32
     fila_inicio = 2
     for depto in sorted(grupos.keys()):
+        depto_norm = normalizar_nombre(depto)
+        col_letra1 = get_column_letter(col_inicio)
+        col_letra2 = get_column_letter(col_inicio+1)
+        # guardar la columna de valores para este departamento (se usará luego para referenciar su TOTAL)
+        depto_col_valor[depto_norm] = col_letra2
+
+        rango = f"{col_letra1}{fila_inicio}:{col_letra2}{fila_inicio}"
+        resultado.merge_cells(rango)
+        resultado.cell(row=fila_inicio, column=col_inicio, value=depto).font = Font(bold=True)
+
+        for i, concepto in enumerate(conceptos, start=1):
+            fila_concepto = fila_inicio + i
+            resultado.cell(row=fila_concepto, column=col_inicio, value=concepto)
+
+            if concepto in mapa_resumen:
+                cols = mapa_resumen[concepto]
+                refs, missing = construir_refs(cols, [depto], filas_totales)
+                formula = f"=SUM({','.join(refs)})" if refs else "0"
+            elif concepto == "TOTAL":
+                formula = f"=SUM({col_letra2}{fila_inicio+1}:{col_letra2}{fila_inicio+len(conceptos)-1})"
+            else:
+                formula = "0"
+
+            formula = validar_formula(formula, depto, concepto)
+            celda_valor = resultado.cell(row=fila_concepto, column=col_inicio+1, value=formula)
+            celda_valor.number_format = '"$"#,##0.00'
+
+            filas_conceptos[depto_norm][concepto] = fila_concepto
+
+        # IMSS General
+        fila_extra = fila_inicio + len(conceptos) + 1
+        resultado.cell(row=fila_extra, column=col_inicio, value="IMSS General")
+        col_valor = get_column_letter(col_inicio+1)
+        fc = filas_conceptos.get(depto_norm, {})
+        fila_patronal = fc.get("IMSS PATRONAL")
+        fila_obrero   = fc.get("IMSS OBRERO")
+
+        if fila_patronal and fila_obrero:
+            formula_general = f"='Resultado Consolidado'!{col_valor}{fila_patronal}+'Resultado Consolidado'!{col_valor}{fila_obrero}"
+        else:
+            formula_general = "0"
+            if not fc:
+                print(f"[WARN] IMSS General - no hay conceptos guardados para {depto} (clave: {depto_norm})")
+
+        formula_general = validar_formula(formula_general, depto, "IMSS General")
+        celda_general = resultado.cell(row=fila_extra, column=col_inicio+1, value=formula_general)
+        celda_general.number_format = '"$"#,##0.00'
+        celda_general.font = Font(bold=True)
+
+        col_inicio += 3
+
+    # 👉 Bloque adicional: IMSS Total (3 filas debajo del bloque inicial)
+    fila_inicio += len(conceptos) + 5  # dejar 3 filas de separación
+    col_inicio = 32
+    for depto in sorted(grupos.keys()):
+        depto_norm = normalizar_nombre(depto)
         col_letra1 = get_column_letter(col_inicio)
         col_letra2 = get_column_letter(col_inicio+1)
         rango = f"{col_letra1}{fila_inicio}:{col_letra2}{fila_inicio}"
         resultado.merge_cells(rango)
         resultado.cell(row=fila_inicio, column=col_inicio, value=depto).font = Font(bold=True)
 
-        for i, concepto in enumerate(conceptos, start=1):
-            resultado.cell(row=fila_inicio+i, column=col_inicio, value=concepto)
+        # Fila 1: IMSS Total (IMSS Obrero + Cesantía Obrero)
+        resultado.cell(row=fila_inicio+1, column=col_inicio, value="IMSS Total")
+        fc = filas_conceptos.get(depto_norm, {})
+        fila_cesantia_obrero = fc.get("CESANTÍA OBRERO")
+        fila_imss_obrero = fc.get("IMSS OBRERO")
 
-            if concepto in mapa_resumen:
-                refs = [f"{col}{filas_totales[depto]}" for col in mapa_resumen[concepto]]
-                formula = f"=SUM({','.join(refs)})"
-            elif concepto == "TOTAL":
-                formula = f"=SUM({col_letra2}{fila_inicio+1}:{col_letra2}{fila_inicio+len(conceptos)-1})"
+        if fila_cesantia_obrero and fila_imss_obrero:
+            formula_total = f"='Resultado Consolidado'!{col_letra2}{fila_cesantia_obrero}+'Resultado Consolidado'!{col_letra2}{fila_imss_obrero}"
+        else:
+            formula_total = "0"
+            if not fc:
+                print(f"[WARN] IMSS Total - faltan conceptos para {depto} (clave: {depto_norm})")
+
+        resultado.cell(row=fila_inicio+1, column=col_inicio+1, value=validar_formula(formula_total, depto, "IMSS Total")).number_format = '"$"#,##0.00'
+
+        # Fila 2: Suma columnas K, M, O, R, U (usar filas_totales con hoja explícita)
+        resultado.cell(row=fila_inicio+2, column=col_inicio, value="Suma K,M,O,R,U")
+        fila_total = filas_totales.get(depto_norm)
+        if fila_total:
+            refs_cols = [f"'Resultado Consolidado'!{c}{fila_total}" for c in ["K","M","O","R","U"]]
+            formula_cols = f"=SUM({','.join(refs_cols)})"
+        else:
+            refs_cols = []
+            formula_cols = "0"
+            print(f"[WARN] Suma K,M,O,R,U - no hay fila total para {depto} (clave: {depto_norm})")
+
+        resultado.cell(row=fila_inicio+2, column=col_inicio+1, value=validar_formula(formula_cols, depto, "Suma K,M,O,R,U")).number_format = '"$"#,##0.00'
+
+        # Fila 3: Suma de anteriores
+        resultado.cell(row=fila_inicio+3, column=col_inicio, value="Suma anteriores")
+        ref_fila1 = f"'Resultado Consolidado'!{col_letra2}{fila_inicio+1}"
+        ref_fila2 = f"'Resultado Consolidado'!{col_letra2}{fila_inicio+2}"
+        formula_sum = f"=SUM({ref_fila1},{ref_fila2})"
+        resultado.cell(row=fila_inicio+3, column=col_inicio+1, value=validar_formula(formula_sum, depto, "Suma anteriores")).number_format = '"$"#,##0.00'
+
+        col_inicio += 3
+
+    # 👉 Bloque adicional: Agrupación de departamentos (3 filas debajo del anterior)
+    fila_inicio += 7  # dejar 3 filas de separación
+    col_inicio = 32
+
+    # Solo estas dos agrupaciones multi-departamento según lo solicitado
+    agrupaciones = {
+        "Administración": ["Administración"],
+        "Casco II + Operación": ["Casco II","Operación"],
+        "Centro Médico Equino": ["Centro Médico Equino"],
+        "Corrales": ["Corrales"],
+        "Forestal + Jardines": ["Forestal","Jardines"],
+        "Producción": ["Producción"],
+        "Centro de Reproducción Equina": ["Centro de Reproducción Equina", "Reproducción", "Reproduccion"],
+        "Training": ["Training"]
+    }
+
+    conceptos_extra = ["INFONAVIT","SAR","CESANTÍA OBRERO","IMSS OBRERO","PATRONAL","SUMA","DIFERENCIA"]
+
+    # columna donde está el "Total" en la hoja Resultado Consolidado (encabezado[27] => columna 28)
+    col_total_letter = get_column_letter(28)
+
+    # Depuración: mostrar filas_totales normalizadas
+    print("=== filas_totales normalizadas (clave_norm -> fila) ===")
+    for k, v in filas_totales.items():
+        print(k, "->", v)
+
+    for nombre, deptos in agrupaciones.items():
+        col_letra1 = get_column_letter(col_inicio)
+        col_letra2 = get_column_letter(col_inicio+1)
+        rango = f"{col_letra1}{fila_inicio}:{col_letra2}{fila_inicio}"
+        resultado.merge_cells(rango)
+        resultado.cell(row=fila_inicio, column=col_inicio, value=nombre).font = Font(bold=True)
+
+        for i, concepto in enumerate(conceptos_extra, start=1):
+            fila_concepto = fila_inicio + i
+            resultado.cell(row=fila_concepto, column=col_inicio, value=concepto)
+
+            if concepto == "INFONAVIT":
+                refs, missing = construir_refs(["W","AA"], deptos, filas_totales)
+                if missing: print(f"[WARN] {nombre} - INFONAVIT faltan: {missing}")
+                formula = f"=SUM({','.join(refs)})" if refs else "0"
+
+            elif concepto == "SAR":
+                refs, missing = construir_refs(["V"], deptos, filas_totales)
+                if missing: print(f"[WARN] {nombre} - SAR faltan: {missing}")
+                formula = f"=SUM({','.join(refs)})" if refs else "0"
+
+            elif concepto == "CESANTÍA OBRERO":
+                refs, missing = construir_refs(["U"], deptos, filas_totales)
+                if missing: print(f"[WARN] {nombre} - CESANTÍA OBRERO faltan: {missing}")
+                formula = f"=SUM({','.join(refs)})" if refs else "0"
+
+            elif concepto == "IMSS OBRERO":
+                refs, missing = construir_refs(["K","M","O","R"], deptos, filas_totales)
+                if missing: print(f"[WARN] {nombre} - IMSS OBRERO faltan: {missing}")
+                formula = f"=SUM({','.join(refs)})" if refs else "0"
+
+            elif concepto == "PATRONAL":
+                refs1, missing1 = construir_refs(["T"], deptos, filas_totales)
+                refs2, missing2 = construir_refs(["I","J","L","N","P","Q","S"], deptos, filas_totales)
+                missing = list(set(missing1 + missing2))
+                if missing: print(f"[WARN] {nombre} - PATRONAL faltan: {missing}")
+                refs = refs1 + refs2
+                formula = f"=SUM({','.join(refs)})" if refs else "0"
+
+            elif concepto == "SUMA":
+                # SUMA suma las 5 filas anteriores (INFONAVIT..PATRONAL) en este bloque
+                refs_suma = [f"'{resultado.title}'!{col_letra2}{fila_inicio+offset}" for offset in range(1,6)]
+                formula = f"=SUM({','.join(refs_suma)})"
+
+            elif concepto == "DIFERENCIA":
+                # 1) referencia a la celda SUMA del bloque agrupado (columna de valores col_letra2)
+                try:
+                    offset_suma = conceptos_extra.index("SUMA") + 1
+                except ValueError:
+                    offset_suma = 6
+                ref_suma_este_bloque = f"'{resultado.title}'!{col_letra2}{fila_inicio + offset_suma}"
+
+                # 2) recolectar referencias a los TOTALES individuales (fila "TOTAL" de cada depto)
+                refs_totales_individuales = []
+                missing_tot = []
+                for d in deptos:
+                    d_norm = normalizar_nombre(d)
+                    fila_total_ind = filas_conceptos.get(d_norm, {}).get("TOTAL")
+                    col_val = depto_col_valor.get(d_norm)
+                    if fila_total_ind and col_val:
+                        refs_totales_individuales.append(f"'{resultado.title}'!{col_val}{fila_total_ind}")
+                    else:
+                        # si falta la fila TOTAL o la columna de valor, lo reportamos
+                        missing_tot.append(d)
+
+                if missing_tot:
+                    print(f"[WARN] {nombre} - faltan datos para TOTAles individuales (fila o columna): {missing_tot}")
+
+                # 3) fórmula final: SUMA agrupada - SUM(TOTAles individuales)
+                if refs_totales_individuales:
+                    suma_individuales = f"SUM({','.join(refs_totales_individuales)})"
+                    formula = f"={ref_suma_este_bloque}-{suma_individuales}"
+                else:
+                    formula = "0"
+                    print(f"[WARN] {nombre} - no se encontraron TOTAles individuales para calcular DIFERENCIA")
+
             else:
-                formula = "$ -"
+                formula = "0"
 
-            celda_valor = resultado.cell(row=fila_inicio+i, column=col_inicio+1, value=formula)
+            formula = validar_formula(formula, nombre, concepto)
+            celda_valor = resultado.cell(row=fila_concepto, column=col_inicio+1, value=formula)
             celda_valor.number_format = '"$"#,##0.00'
 
         col_inicio += 3
 
-    # Celda BM9
-    refs_totales = []
-    col_inicio = 32
-    fila_inicio = 2
-    for depto in sorted(grupos.keys()):
-        col_letra_valor = get_column_letter(col_inicio+1)
-        fila_total_tabla = fila_inicio + len(conceptos)
-        refs_totales.append(f"{col_letra_valor}{fila_total_tabla}")
-        col_inicio += 3
-
-    formula_BM9 = f"=SUM({','.join(refs_totales)})"
-    celda_BM9 = resultado.cell(row=9, column=openpyxl.utils.column_index_from_string("BM"), value=formula_BM9)
-    celda_BM9.font = Font(bold=True)
-    celda_BM9.number_format = '"$"#,##0.00'
-
-    # Guardar archivo final
+    # Guardar archivo final con nombre dinámico
     hoy = datetime.date.today()
     mes = hoy.strftime("%B")
     año = hoy.year
