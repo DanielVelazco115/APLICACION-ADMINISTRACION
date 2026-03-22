@@ -245,7 +245,7 @@ def consolidar(ruta_principal, ruta_nombres, carpeta_salida):
         resultado.cell(row=fila_inicio+1, column=col_inicio+1, value=validar_formula(formula_total, depto, "IMSS Total")).number_format = '"$"#,##0.00'
 
         # Fila 2: Suma columnas K, M, O, R, U (usar filas_totales con hoja explícita)
-        resultado.cell(row=fila_inicio+2, column=col_inicio, value="Suma K,M,O,R,U")
+        resultado.cell(row=fila_inicio+2, column=col_inicio, value="Suma")
         fila_total = filas_totales.get(depto_norm)
         if fila_total:
             refs_cols = [f"'Resultado Consolidado'!{c}{fila_total}" for c in ["K","M","O","R","U"]]
