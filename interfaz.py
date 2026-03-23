@@ -26,7 +26,7 @@ with col_logo:
 
 with col_titulo:
     # Título principal con un toque de HTML para el color (puedes cambiar #004691)
-    st.markdown("<h1 style='color: #004691; margin-top: -10px;'>Revision del EMA & EBA Bimestral</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color: #004691; margin-top: -10px;'>Revision del EMA & EBA Bimestral</h1>")
     st.write("Bienvenido, Sube tus archivos.")
 
 st.divider() # Línea divisoria visual
