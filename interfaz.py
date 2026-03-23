@@ -22,7 +22,7 @@ with col_logo:
     # Reemplaza 'ruta/a/tu/logo.png' por la ruta real de tu archivo de imagen
     # o usa una URL directa (como el ejemplo de abajo).
     # Mientras tanto, usaré una imagen de ejemplo de un gráfico.
-    st.image("imagenes/SR.png", width=180) 
+    st.image("SR.png", width=180) 
 
 with col_titulo:
     # Título principal con un toque de HTML para el color (puedes cambiar #004691)
