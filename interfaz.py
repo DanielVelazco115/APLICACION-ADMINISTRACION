@@ -111,7 +111,7 @@ if archivo_principal and archivo_nombres:
                     st.download_button(
                         label="⬇️ Descargar archivo consolidado (Excel)",
                         data=f,
-                        file_name=os.path.name(ruta_salida),
+                        file_name=os.path.basename(ruta_salida),
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         use_container_width=True # Que ocupe todo el ancho de su columna
                     )
