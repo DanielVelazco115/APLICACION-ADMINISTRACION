@@ -49,8 +49,8 @@ def mostrar_interfaz_imssme():
     # 2. ÁREA DE CARGA DE ARCHIVOS
     st.subheader("Paso 1: Sube tus archivos")
     
-    archivo_principal = st.file_uploader("Sube plantilla IMSS mensual (EMA)", type=["xlsx"])
-    archivo_nombres = st.file_uploader("Sube nombres organizados (Catálogo)", type=["xlsx"])
+    archivo_principal = st.file_uploader("Sube el archivo plantilla IMSS mensual.xlsx (EMA)", type=["xlsx"])
+    archivo_nombres = st.file_uploader("Sube el archivo nombres organizados.xlsx (Catálogo)", type=["xlsx"])
 
     st.info("ℹ️ Asegúrate de subir ambos archivos para comenzar.")
 
