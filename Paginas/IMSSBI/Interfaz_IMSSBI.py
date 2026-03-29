@@ -24,8 +24,8 @@ def mostrar_interfaz_imssbi():
 
     # 3. ÁREA DE CARGA
     st.subheader("Paso 1: Sube tus archivos")
-    archivo_principal = st.file_uploader("Sube plantilla IMSS bimestral", type=["xlsx"])
-    archivo_nombres = st.file_uploader("Sube nombres organizados", type=["xlsx"])
+    archivo_principal = st.file_uploader("Sube el archivo plantilla IMSS bimestral.xlsx", type=["xlsx"])
+    archivo_nombres = st.file_uploader("Sube nombres el archivo organizados.xlsx", type=["xlsx"])
 
     st.info("ℹ️ Asegúrate de que ambos archivos estén cargados antes de procesar.")
 
