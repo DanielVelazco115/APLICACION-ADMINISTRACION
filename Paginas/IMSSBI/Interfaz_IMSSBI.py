@@ -1,60 +1,75 @@
 import streamlit as st
 import os
 import tempfile
+import pandas as pd
 from . import revision
 
 def mostrar_interfaz_imssbi():
-    # --- TODO ESTE BLOQUE AHORA TIENE TAB (Sangría) ---
-    
     # 1. ENCABEZADO Y LOGO
-    # Creamos dos columnas para el encabezado
-    col_logo, col_titulo = st.columns([1, 5]) # Proporción 1 a 5
-
+    col_logo, col_titulo = st.columns([1, 5])
     with col_logo:
-        # Ruta corregida para la nueva estructura de carpetas
-        st.image("Paginas/IMSSBI/SR.png", width=180) 
-
+        st.image("Paginas/IMSSBI/calendario.png", width=150) 
     with col_titulo:
-        # Título principal con HTML
-        st.markdown("<h1 style='color: #004691; margin-top: -10px;'>Revision del EMA & EBA Bimestral</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='color: #004691; margin-top: -10px;'>SISTEMA DE REVISION BIMESTRAL</h1>", unsafe_allow_html=True)
         st.write("Bienvenido, Sube tus archivos.")
 
-    st.divider() # Línea divisoria visual
+    st.divider()
 
     # 2. ENCABEZADO CENTRADO
     col1, col2, col3 = st.columns([1, 2, 1])
-
     with col2:
-        st.markdown("<h2 style='text-align: center;'>Administración/ Rancho Santa Rosa</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center;'>Administración</h2>", unsafe_allow_html=True)
 
     st.divider()
 
     # 3. ÁREA DE CARGA
     st.subheader("Paso 1: Sube tus archivos")
-
     archivo_principal = st.file_uploader("Sube plantilla IMSS bimestral", type=["xlsx"])
     archivo_nombres = st.file_uploader("Sube nombres organizados", type=["xlsx"])
 
     st.info("ℹ️ Asegúrate de que ambos archivos estén cargados antes de procesar.")
 
-    # 4. ÁREA PRINCIPAL - Lógica y Salidas
+    # 4. ÁREA PRINCIPAL
     st.subheader("Estado del Proceso")
 
-    # Verificamos si ambos archivos han sido subidos
     if archivo_principal and archivo_nombres:
         
-        # Mostramos un mensaje visual de "Archivos Listos"
-        st.success("✅ ¡Archivos cargados correctamente!")
-        st.markdown("---") # Separador
+        # --- VALIDACIÓN DE FILAS 6 EN ADELANTE EN EMA Y EBA ---
+        try:
+            xls = pd.ExcelFile(archivo_principal)
+            hojas_disponibles = [h for h in xls.sheet_names if h.upper() in ["EMA", "EBA"]]
+            
+            if not hojas_disponibles:
+                st.error("❌ El archivo no contiene las hojas 'EMA' o 'EBA'.")
+                st.stop()
 
-        # Resumen de lo cargado
-        col1_res, col2_res = st.columns(2)
-        with col1_res:
-            st.write(f"**Plantilla:** `{archivo_principal.name}`")
-        with col2_res:
-            st.write(f"**Nombres:** `{archivo_nombres.name}`")
+            datos_encontrados = False
+            
+            for hoja in hojas_disponibles:
+                # Saltamos las primeras 5 filas (skiprows=5 lee desde la 6 en adelante)
+                df_temp = pd.read_excel(xls, sheet_name=hoja, skiprows=5)
+                
+                # Limpiamos filas completamente vacías
+                df_limpio = df_temp.dropna(how='all')
+                
+                if not df_limpio.empty:
+                    datos_encontrados = True
+                    break # Si encontramos datos en una, es suficiente para continuar
 
-        # Lógica de guardado temporal
+            if not datos_encontrados:
+                st.error("❌ ERROR: No se detectaron datos de trabajadores en las hojas EMA/EBA.")
+                st.warning("Las hojas están vacías desde la fila 6 en adelante. Por favor, revisa tu archivo.")
+                st.stop() # Bloqueo total: No aparece botón de procesar ni descargar
+
+        except Exception as e:
+            st.error(f"❌ Error técnico al validar filas: {e}")
+            st.stop()
+        # --- FIN DE VALIDACIÓN ---
+
+        st.success("✅ ¡Archivos validados con datos detectados!")
+        st.markdown("---")
+
+        # Preparación de archivos para procesamiento
         carpeta_temp = tempfile.mkdtemp()
         ruta_principal = os.path.join(carpeta_temp, archivo_principal.name)
         ruta_nombres = os.path.join(carpeta_temp, archivo_nombres.name)
@@ -64,25 +79,19 @@ def mostrar_interfaz_imssbi():
         with open(ruta_nombres, "wb") as f:
             f.write(archivo_nombres.getbuffer())
 
-        st.markdown("---") # Separador
-
-        # Centramos el botón de procesar
+        # Botón de Procesar
         left_spacer, center_button, right_spacer = st.columns([2, 1, 2])
-        
         with center_button:
             btn_procesar = st.button("🚀 Iniciar Procesamiento")
 
         if btn_procesar:
-            # Spinner de carga
-            with st.spinner('Consolidando datos... por favor espera.'):
+            with st.spinner('Consolidando datos...'):
                 try:
-                    # Llamada a la lógica del archivo revision.py
                     ruta_salida = revision.consolidar(ruta_principal, ruta_nombres, carpeta_temp)
                     
                     st.balloons() 
-                    st.success("🎉 ¡Consolidación exitosa! Tu archivo está listo.")
+                    st.success("🎉 ¡Consolidación exitosa!")
                     
-                    # Botón de descarga
                     with open(ruta_salida, "rb") as f:
                         st.download_button(
                             label="⬇️ Descargar archivo consolidado (Excel)",
@@ -91,17 +100,8 @@ def mostrar_interfaz_imssbi():
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                             use_container_width=True
                         )
-                        
                 except Exception as e:
-                    st.error(f"❌ Ocurrió un error inesperado durante el proceso:\n\n`{e}`")
+                    st.error(f"❌ Error durante el proceso: `{e}`")
 
     else:
-        # Mensaje cuando aún no se suben los archivos
         st.warning("⚠️ Esperando que subas ambos archivos Excel...")
-        
-        st.markdown("""
-        <div style='text-align: center; margin-top: 50px; opacity: 0.5;'>
-            <img src='https://cdn-icons-png.flaticon.com/512/3342/3342137.png' width='150'>
-            <p>Sube tus archivos para comenzar</p>
-        </div>
-        """, unsafe_allow_html=True)
