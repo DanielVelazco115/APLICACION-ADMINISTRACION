@@ -2,7 +2,7 @@
  #Cada cambio que se haga poner la fecha y en el apartado lo que se hizo para saber que hacer 
 
  
------------------------ COSAS NUEVAS Y CAMBIOS ----------------------- 29/mARZO/2026
+----------------------- COSAS NUEVAS Y CAMBIOS ----------------------- 29/MARZO/2026
 SE MODIFICO EL ARCHIVO DE IMSSBI - RESTRICCION DE ARCHIVO DE LA PLANTILLA SI ESTAN VACIOS
 SE MODIOFIO EL ARCHIVO DE IMSSME - RESTRICCION DE ARCHIVO DE LA PLANTILLA SI ESTAN VACIOS
 
