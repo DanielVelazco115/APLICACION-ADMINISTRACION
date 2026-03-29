@@ -55,6 +55,7 @@ def mostrar_interfaz_imssme():
     st.info("ℹ️ Asegúrate de subir ambos archivos para comenzar.")
 
     # 3. PROCESAMIENTO
+    st.subheader("Estado del Proceso")
     if archivo_principal and archivo_nombres:
         
         # --- VALIDACIÓN DE FILAS 6 EN ADELANTE (EMA MENSUAL) ---
@@ -119,4 +120,4 @@ def mostrar_interfaz_imssme():
                 except Exception as e:
                     st.error(f"❌ Error al procesar: {e}")
     else:
-        st.warning("⚠️ Esperando archivos...")
+        st.warning("⚠️ Esperando que subas ambos archivos Excel...")
