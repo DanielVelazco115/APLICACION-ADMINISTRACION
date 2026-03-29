@@ -1,14 +1,31 @@
 import streamlit as st
 import pandas as pd
 import os
+import base64  # Necesario para procesar la imagen
 from datetime import datetime
 # Importaciones actualizadas para tu nueva estructura
 from Paginas.IMSSBI.Interfaz_IMSSBI import mostrar_interfaz_imssbi
 from Paginas.IMSSME.Interfaz_IMSSME import mostrar_interfaz_imssme
 from Paginas.NOMINA.Interfaz_Nomina_Azu import mostrar_interfaz_nomina_azu
 
-# --- FUNCIONES DE MEMORIA AUTOMÁTICA ---
+# 1. Configuración de la página (DEBE IR PRIMERO QUE NADA)
+st.set_page_config(
+    page_title="Admin TICS",
+    page_icon="🏢",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# --- FUNCIONES DE APOYO ---
 FECHA_LOG = "fecha_modificacion.txt"
+
+def get_base64_image(image_path):
+    """Convierte una imagen local a base64 para mostrarla en HTML"""
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except Exception:
+        return None
 
 def actualizar_fecha_servidor():
     ahora = datetime.now().strftime("%d de %B, %Y a las %H:%M")
@@ -34,7 +51,6 @@ st.markdown("""
     div[data-testid="stRadio"] div[role="radiogroup"] { display: flex; flex-direction: column; align-items: center; }
     .main { background-color: #f5f7f9; }
     .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    /* Estilo para las tarjetas del historial */
     .historial-card {
         background-color: white;
         padding: 10px 20px;
@@ -46,22 +62,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 1. Configuración de la página
-st.set_page_config(
-    page_title="Admin Pro Panel",
-    page_icon="🏢",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
 # 2. Barra Lateral (Sidebar)
 with st.sidebar:
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         st.image("Imagenes/SR.png", use_container_width=True)
 
-    st.title("Bienvenido", text_alignment="center")
-    st.subheader("Rancho Santa Rosa", text_alignment="center")
+    st.title("Bienvenido")
+    st.subheader("Rancho Santa Rosa")
 
     st.markdown("---")
 
@@ -75,7 +83,23 @@ with st.sidebar:
 
 # --- 3. Cuerpo Principal ---
 if menu == "📄 Informacion":
-    st.title("🚀 Panel de Control Administrativo")
+    # Preparamos la imagen de control en base64
+    img_control_b64 = get_base64_image("Imagenes/control.png")
+    
+    if img_control_b64:
+        # Título con imagen centrada usando Base64
+        st.markdown(
+            f"""
+            <div style='text-align: center; display: flex; align-items: center; justify-content: center; gap: 20px;'>
+                <img src='data:image/png;base64,{img_control_b64}' width='150'>
+                <h1 style='margin: 0; color: #004691;'>Control Administrativo - Rancho Santa Rosa </h1>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        # Fallback por si la imagen no se encuentra
+        st.markdown("<h1 style='text-align: center;'>🗃️ Control Administrativo</h1>", unsafe_allow_html=True)
     
     # Métricas superiores
     col_a, col_b, col_c = st.columns(3)
@@ -93,7 +117,6 @@ if menu == "📄 Informacion":
     st.subheader("🕒 Actividad Reciente de la Sesión")
     
     if st.session_state["historial_procesos"]:
-        # Mostramos los últimos movimientos registrados
         for item in reversed(st.session_state["historial_procesos"]):
             st.markdown(f"""
             <div class="historial-card">
