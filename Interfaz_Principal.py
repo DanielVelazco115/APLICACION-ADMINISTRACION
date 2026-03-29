@@ -71,7 +71,7 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.info("Versión 1.0.2")
+    st.info("Versión 1.1.5")
 
 # --- 3. Cuerpo Principal ---
 if menu == "📄 Informacion":
