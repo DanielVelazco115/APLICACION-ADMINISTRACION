@@ -67,7 +67,7 @@ with st.sidebar:
 
     menu = st.sidebar.radio(
         "¿Qué Sección Buscas?", 
-        ["📄 Informacion", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NOMINA & AZU"]
+        ["📄 Informacion", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NOMINA & SUA"]
     )
 
     st.markdown("---")
@@ -116,5 +116,5 @@ elif menu == "📕 IMSS Mensual":
 elif menu == "📖 IMSS Bimestral":
     mostrar_interfaz_imssbi()
 
-elif menu == "🗓️ NOMINA & AZU":
+elif menu == "🗓️ NOMINA & SUA":
     mostrar_interfaz_nomina_azu()
