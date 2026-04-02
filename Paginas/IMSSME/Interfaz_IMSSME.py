@@ -92,6 +92,10 @@ def mostrar_interfaz_imssme():
                         }
                         st.session_state["historial_procesos"].append(nuevo_registro)
                     # --------------------------------------------------
+                        # --- AGREGAR ESTO AQUÍ PARA LA FECHA GLOBAL ---
+                        with open("fecha_modificacion.txt", "w") as f:
+                            f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+                        # ----------------------------------------------
 
                     st.balloons()
                     st.success("🎉 ¡Revisión mensual terminada!")
