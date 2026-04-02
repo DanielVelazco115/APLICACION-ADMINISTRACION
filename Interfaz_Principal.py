@@ -5,7 +5,7 @@ import base64
 import socket 
 import platform
 import psutil
-import pytz 
+import pytz # Necesario para la hora de México
 from datetime import datetime
 
 # --- IMPORTACIÓN DE PÁGINAS ---
@@ -56,8 +56,9 @@ def obtener_info_sistema():
         so_display = so
         icono = "🪟" if so == "Windows" else "🍎" if so == "Darwin" else "🐧"
         id_display = nombre_pc
-    
+
     if so == "Darwin": so_display = "macOS"
+    
     return f"{icono} {so_display}", id_display, "N/A"
 
 FECHA_LOG = "fecha_modificacion.txt"
@@ -77,17 +78,10 @@ st.markdown("""
     
     [data-testid="stSidebar"] { background-color: #0d1b2a; }
     
-    /* Input de nombre: Texto oscuro */
+    /* Input de nombre: Texto oscuro para legibilidad */
     [data-testid="stSidebar"] input {
         color: #0d1b2a !important;
         caret-color: #0d1b2a !important;
-    }
-
-    /* Estilo para el input cuando está BLOQUEADO (disabled) */
-    [data-testid="stSidebar"] input:disabled {
-        background-color: #e9ecef !important;
-        color: #6c757d !important;
-        cursor: not-allowed;
     }
 
     /* Etiquetas y menús en blanco */
@@ -105,6 +99,9 @@ st.markdown("""
         text-align: center; color: #a3b18a !important; font-size: 0.8em;
         padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 30px;
     }
+
+    .centered-header { text-align: center; color: #1b263b; margin-bottom: 5px; }
+    .centered-subtext { text-align: center; color: #6c757d; margin-bottom: 30px; }
 
     .metric-card {
         background-color: white; padding: 20px; border-radius: 15px;
@@ -135,57 +132,40 @@ with st.sidebar:
     st.markdown("<p style='text-align: center; color: #a3b18a;'>Rancho Santa Rosa</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- IDENTIFICACIÓN PERMANENTE ---
+    # --- IDENTIFICACIÓN OBLIGATORIA ---
+    st.markdown("---")
+    # Iniciamos el valor vacío para obligar al usuario a escribir
+    usuario_id = st.text_input("👤 Identificar este equipo como:", value="", placeholder="Escribe tu nombre...")
+    st.session_state["usuario_actual"] = usuario_id
     st.markdown("---")
     
-    # Inicializamos el estado si no existe
-    if "nombre_fijado" not in st.session_state:
-        st.session_state["nombre_fijado"] = False
-    if "usuario_actual" not in st.session_state:
-        st.session_state["usuario_actual"] = ""
-
-    # El input se bloquea (disabled) si ya hay un nombre fijado
-    usuario_input = st.text_input(
-        "👤 Identificar este equipo como:", 
-        value=st.session_state["usuario_actual"],
-        placeholder="Escribe tu nombre y presiona Enter...",
-        disabled=st.session_state["nombre_fijado"],
-        help="Una vez ingresado, no podrá ser modificado en esta sesión."
-    )
-
-    # Si el usuario escribe algo y presiona Enter, fijamos el nombre
-    if usuario_input.strip() != "" and not st.session_state["nombre_fijado"]:
-        st.session_state["usuario_actual"] = usuario_input
-        st.session_state["nombre_fijado"] = True
-        st.rerun() # Recargamos para aplicar el bloqueo inmediatamente
-
-    st.markdown("---")
-    
-    # Solo se habilita el menú si el nombre ya fue fijado
-    if st.session_state["nombre_fijado"]:
+    # Solo se habilita el menú si el campo NO está vacío
+    if usuario_id.strip() != "":
         menu = st.radio("Seleccione una sección:", 
                         ["📄 Información", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NÓMINA & SUA"],
                         key="menu_principal")
     else:
-        st.warning("⚠️ Debes ingresar tu nombre para continuar.")
+        st.warning("⚠️ Ingresa tu nombre para habilitar el menú.")
         menu = "🔒 Bloqueado"
     
     st.markdown('<div class="version-container">Versión 1.1.5<br>TICS & Administración</div>', unsafe_allow_html=True)
 
-# --- 5. INICIALIZAR SESSION STATE HISTORIAL ---
+# --- 5. INICIALIZAR SESSION STATE ---
 if "historial_procesos" not in st.session_state:
     st.session_state["historial_procesos"] = []
 
 # --- 6. NAVEGACIÓN ---
 
+# PANTALLA DE BLOQUEO
 if menu == "🔒 Bloqueado":
     st.markdown("<br><br>", unsafe_allow_html=True)
     _, col_bloqueo, _ = st.columns([1, 2, 1])
     with col_bloqueo:
-        st.info("### 👋 Identificación Requerida")
-        st.write("Para habilitar las herramientas de administración, ingresa tu nombre completo en el panel izquierdo.")
-        st.caption("Nota: El nombre se registrará en cada archivo procesado y no podrá cambiarse hasta cerrar la sesión.")
+        st.info("### 👋 ¡Hola! Bienvenido al sistema.")
+        st.write("Para comenzar a trabajar, por favor **ingresa tu nombre** en el panel de la izquierda.")
+        st.write("Esto permitirá registrar correctamente quién realiza cada proceso en el historial de actividad.")
 
+# ACCESO AUTORIZADO
 elif menu == "📄 Información":
     _, col_centro, _ = st.columns([1, 2, 1])
     with col_centro:
@@ -205,7 +185,7 @@ elif menu == "📄 Información":
         st.markdown(f"""<div class="metric-card">
             <p style='color:gray; font-size: 0.9em;'>SISTEMA EN NUBE</p>
             <h2 style='color:#1b263b; margin:0;'>{so_v}</h2>
-            <small style='color:gray;'>Sesión iniciada por: <b>{st.session_state["usuario_actual"]}</b></small>
+            <small style='color:gray;'>Tu ID: {st.session_state["usuario_actual"]}</small>
         </div>""", unsafe_allow_html=True)
         
     with col_b:
