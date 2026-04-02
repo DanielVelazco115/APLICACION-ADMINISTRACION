@@ -2,9 +2,17 @@ import streamlit as st
 import os
 import tempfile
 import pandas as pd
-import pytz # <-- Agregado para la zona horaria de México
+import pytz 
 from datetime import datetime 
 from . import revision
+
+# --- FUNCIÓN PARA LOG FÍSICO (Mantenemos la misma estructura) ---
+def registrar_log_fisico(usuario, accion, detalle=""):
+    """Guarda la actividad en un archivo de texto para consulta histórica."""
+    tz = pytz.timezone('America/Mexico_City')
+    ahora = datetime.now(tz).strftime("%d/%m/%Y %H:%M:%S")
+    with open("log_actividad.txt", "a", encoding="utf-8") as f:
+        f.write(f"{ahora} | USUARIO: {usuario} | ACCIÓN: {accion} | DETALLE: {detalle}\n")
 
 def mostrar_interfaz_imssbi():
     # 1. ENCABEZADO Y LOGO
@@ -26,8 +34,16 @@ def mostrar_interfaz_imssbi():
 
     # 3. ÁREA DE CARGA
     st.subheader("Paso 1: Sube tus archivos")
+    
+    usuario_actual = st.session_state.get("usuario_actual", "Desconocido")
+    
     archivo_principal = st.file_uploader("Sube el archivo plantilla IMSS bimestral.xlsx", type=["xlsx"])
     archivo_nombres = st.file_uploader("Sube nombres el archivo organizados.xlsx", type=["xlsx"])
+
+    # REGISTRO DE CARGA INICIAL
+    if archivo_principal and "log_bi_cargado" not in st.session_state:
+        registrar_log_fisico(usuario_actual, "CARGA ARCHIVO BI", f"Subió: {archivo_principal.name}")
+        st.session_state["log_bi_cargado"] = True
 
     st.info("ℹ️ Asegúrate de que ambos archivos estén cargados antes de procesar.")
 
@@ -36,7 +52,6 @@ def mostrar_interfaz_imssbi():
 
     if archivo_principal and archivo_nombres:
         
-        # --- VALIDACIÓN DE FILAS 6 EN ADELANTE EN EMA Y EBA ---
         try:
             xls = pd.ExcelFile(archivo_principal)
             hojas_disponibles = [h for h in xls.sheet_names if h.upper() in ["EMA", "EBA"]]
@@ -56,13 +71,11 @@ def mostrar_interfaz_imssbi():
 
             if not datos_encontrados:
                 st.error("❌ ERROR: No se detectaron datos de trabajadores en las hojas EMA/EBA.")
-                st.warning("Las hojas están vacías desde la fila 6 en adelante.")
                 st.stop() 
 
         except Exception as e:
             st.error(f"❌ Error técnico al validar filas: {e}")
             st.stop()
-        # --- FIN DE VALIDACIÓN ---
 
         st.success("✅ ¡Archivos validados con datos detectados!")
         st.markdown("---")
@@ -85,20 +98,23 @@ def mostrar_interfaz_imssbi():
                 try:
                     ruta_salida = revision.consolidar(ruta_principal, ruta_nombres, carpeta_temp)
                     
-                    # --- VINCULACIÓN ACTUALIZADA PARA LA NUBE ---
+                    # --- BLOQUE DE REGISTRO DETALLADO ---
+                    tz = pytz.timezone('America/Mexico_City')
+                    ahora_mx = datetime.now(tz)
+                    
+                    # 1. Registro temporal (Session State)
                     if "historial_procesos" in st.session_state:
-                        # Forzamos hora de México
-                        tz = pytz.timezone('America/Mexico_City')
-                        ahora_mx = datetime.now(tz)
-                        
                         registro_bi = {
                             "tipo": "📖 IMSS Bimestral",
                             "archivo": f"{archivo_principal.name}",
                             "hora": ahora_mx.strftime("%I:%M %p"),
-                            "equipo": st.session_state.get("usuario_actual", "Remoto") # <--- USA IDENTIFICADOR DE BARRA LATERAL
+                            "equipo": usuario_actual
                         }
                         st.session_state["historial_procesos"].append(registro_bi)
                     
+                    # 2. Registro PERMANENTE (Log Físico)
+                    registrar_log_fisico(usuario_actual, "PROCESO COMPLETADO", f"Generó revisión bimestral de: {archivo_principal.name}")
+
                     # ACTUALIZACIÓN DE FECHA GLOBAL
                     with open("fecha_modificacion.txt", "w") as f:
                         f.write(ahora_mx.strftime("%d/%m/%Y %H:%M:%S"))
@@ -117,6 +133,7 @@ def mostrar_interfaz_imssbi():
                         )
                 except Exception as e:
                     st.error(f"❌ Error durante el proceso: `{e}`")
+                    registrar_log_fisico(usuario_actual, "ERROR BIMESTRAL", str(e))
 
     else:
         st.warning("⚠️ Esperando que subas ambos archivos Excel...")
