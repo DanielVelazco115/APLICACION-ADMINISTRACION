@@ -68,7 +68,7 @@ def leer_ultima_fecha():
             return f.read()
     return "Sin registros previos"
 
-# --- 3. ESTILOS CSS (REVISADOS Y CORREGIDOS) ---
+# --- 3. ESTILOS CSS ---
 st.markdown("""
     <style>
     .stAppDeployButton {display: none !important;}
@@ -76,38 +76,30 @@ st.markdown("""
     footer {visibility: hidden;}
     .main { background-color: #f8f9fa; }
     
-    /* Fondo Barra Lateral */
     [data-testid="stSidebar"] { background-color: #0d1b2a; }
     
-    /* 1. TEXTO QUE ESCRIBES (INPUT): Debe ser oscuro para verse sobre el fondo blanco */
+    /* Input de nombre: Texto oscuro para legibilidad */
     [data-testid="stSidebar"] input {
         color: #0d1b2a !important;
         caret-color: #0d1b2a !important;
     }
 
-    /* 2. ETIQUETAS Y TEXTOS FIJOS: Todo en blanco */
+    /* Etiquetas y menús en blanco */
     [data-testid="stSidebar"] label p,
     [data-testid="stSidebar"] .stMarkdown p,
     [data-testid="stSidebar"] h3 {
         color: white !important;
     }
 
-    /* 3. RADIO BUTTONS (MENÚ): Forzar visibilidad de las opciones */
     [data-testid="stSidebar"] .stRadio label div[data-testid="stMarkdownContainer"] p {
         color: white !important;
     }
 
-    /* 4. VERSIÓN Y PIE DE SIDEBAR */
     .version-container {
-        text-align: center; 
-        color: #a3b18a !important; 
-        font-size: 0.8em;
-        padding: 20px; 
-        border-top: 1px solid rgba(255,255,255,0.1); 
-        margin-top: 30px;
+        text-align: center; color: #a3b18a !important; font-size: 0.8em;
+        padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 30px;
     }
 
-    /* 5. TARJETAS E HISTORIAL */
     .centered-header { text-align: center; color: #1b263b; margin-bottom: 5px; }
     .centered-subtext { text-align: center; color: #6c757d; margin-bottom: 30px; }
 
@@ -140,17 +132,21 @@ with st.sidebar:
     st.markdown("<p style='text-align: center; color: #a3b18a;'>Rancho Santa Rosa</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # IDENTIFICACIÓN PERSONALIZADA
+    # --- IDENTIFICACIÓN OBLIGATORIA ---
     st.markdown("---")
-    # El CSS forzará que el texto aquí sea oscuro (legible)
-    usuario_id = st.text_input("👤 Identificar este equipo como:", value="Escritorio 1")
+    # Iniciamos el valor vacío para obligar al usuario a escribir
+    usuario_id = st.text_input("👤 Identificar este equipo como:", value="", placeholder="Escribe tu nombre...")
     st.session_state["usuario_actual"] = usuario_id
     st.markdown("---")
     
-    # El CSS forzará que estas opciones se vean blancas
-    menu = st.radio("Seleccione una sección:", 
-                    ["📄 Información", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NÓMINA & SUA"],
-                    key="menu_principal")
+    # Solo se habilita el menú si el campo NO está vacío
+    if usuario_id.strip() != "":
+        menu = st.radio("Seleccione una sección:", 
+                        ["📄 Información", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NÓMINA & SUA"],
+                        key="menu_principal")
+    else:
+        st.warning("⚠️ Ingresa tu nombre para habilitar el menú.")
+        menu = "🔒 Bloqueado"
     
     st.markdown('<div class="version-container">Versión 1.1.5<br>TICS & Administración</div>', unsafe_allow_html=True)
 
@@ -159,7 +155,18 @@ if "historial_procesos" not in st.session_state:
     st.session_state["historial_procesos"] = []
 
 # --- 6. NAVEGACIÓN ---
-if menu == "📄 Información":
+
+# PANTALLA DE BLOQUEO
+if menu == "🔒 Bloqueado":
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    _, col_bloqueo, _ = st.columns([1, 2, 1])
+    with col_bloqueo:
+        st.info("### 👋 ¡Hola! Bienvenido al sistema.")
+        st.write("Para comenzar a trabajar, por favor **ingresa tu nombre** en el panel de la izquierda.")
+        st.write("Esto permitirá registrar correctamente quién realiza cada proceso en el historial de actividad.")
+
+# ACCESO AUTORIZADO
+elif menu == "📄 Información":
     _, col_centro, _ = st.columns([1, 2, 1])
     with col_centro:
         img_control_b64 = get_base64_image("Imagenes/control.png")
