@@ -97,6 +97,10 @@ def mostrar_interfaz_imssbi():
                         }
                         st.session_state["historial_procesos"].append(registro_bi)
                     # ---------------------------------------------------------
+                        # --- AGREGAR ESTO AQUÍ PARA LA FECHA GLOBAL ---
+                        with open("fecha_modificacion.txt", "w") as f:
+                            f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+                        # ----------------------------------------------
                     
                     st.balloons() 
                     st.success("🎉 ¡Consolidación exitosa!")
