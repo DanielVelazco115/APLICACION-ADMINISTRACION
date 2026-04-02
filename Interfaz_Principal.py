@@ -126,6 +126,8 @@ st.markdown("""
         color: white;
         border: none;
         transition: 0.3s;
+        display: block;
+        margin: 0 auto;
     }
     .stButton>button:hover {
         background-color: #780001;
@@ -173,13 +175,15 @@ with st.sidebar:
                         key="menu_principal")
         
         st.markdown("<br><br>", unsafe_allow_html=True)
-        # --- BOTÓN DE CERRAR SESIÓN ---
-        if st.button("🔴 Cerrar Sesión"):
-            st.session_state["nombre_fijado"] = False
-            st.session_state["usuario_actual"] = ""
-            # Opcional: limpiar también el historial de la sesión si deseas
-            # st.session_state["historial_procesos"] = [] 
-            st.rerun()
+        
+        # --- BOTÓN DE CERRAR SESIÓN CENTRADO ---
+        # Usamos columnas para dejar espacio a los lados y centrar el botón
+        col_side1, col_side2, col_side3 = st.columns([0.5, 2, 0.5])
+        with col_side2:
+            if st.button("🔴 Cerrar Sesión", use_container_width=True):
+                st.session_state["nombre_fijado"] = False
+                st.session_state["usuario_actual"] = ""
+                st.rerun()
     else:
         st.warning("⚠️ Debes ingresar tu nombre para continuar.")
         menu = "🔒 Bloqueado"
