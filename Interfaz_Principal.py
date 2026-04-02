@@ -13,6 +13,8 @@ try:
     from Paginas.IMSSBI.Interfaz_IMSSBI import mostrar_interfaz_imssbi
     from Paginas.IMSSME.Interfaz_IMSSME import mostrar_interfaz_imssme
     from Paginas.NOMINA.Interfaz_Nomina_Azu import mostrar_interfaz_nomina_azu
+    # Implementación de la nueva página de registros
+    from Paginas.UsuariosRE.Interfaz_Registro import mostrar_interfaz_registro 
 except ImportError as e:
     st.error(f"Error al cargar los módulos de páginas: {e}")
 
@@ -29,6 +31,12 @@ st.set_page_config(
 def obtener_hora_mexico():
     tz = pytz.timezone('America/Mexico_City')
     return datetime.now(tz)
+
+def guardar_usuario_permanente(nombre):
+    """Guarda el nombre en el archivo log físico"""
+    ahora = obtener_hora_mexico().strftime("%d/%m/%Y %H:%M:%S")
+    with open("registro_usuarios.txt", "a", encoding="utf-8") as f:
+        f.write(f"{ahora} | {nombre}\n")
 
 @st.cache_data
 def get_base64_image(image_path):
@@ -77,23 +85,15 @@ st.markdown("""
     
     [data-testid="stSidebar"] { background-color: #0d1b2a; }
     
-    /* Input de nombre: Texto oscuro */
-    [data-testid="stSidebar"] input {
-        color: #0d1b2a !important;
-        caret-color: #0d1b2a !important;
-    }
+    [data-testid="stSidebar"] input { color: #0d1b2a !important; caret-color: #0d1b2a !important; }
 
-    /* Estilo para el input cuando está BLOQUEADO (disabled) */
     [data-testid="stSidebar"] input:disabled {
         background-color: #e9ecef !important;
         color: #6c757d !important;
         cursor: not-allowed;
     }
 
-    /* Etiquetas y menús en blanco */
-    [data-testid="stSidebar"] label p,
-    [data-testid="stSidebar"] .stMarkdown p,
-    [data-testid="stSidebar"] h3 {
+    [data-testid="stSidebar"] label p, [data-testid="stSidebar"] .stMarkdown p, [data-testid="stSidebar"] h3 {
         color: white !important;
     }
 
@@ -135,16 +135,13 @@ with st.sidebar:
     st.markdown("<p style='text-align: center; color: #a3b18a;'>Rancho Santa Rosa</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- IDENTIFICACIÓN PERMANENTE ---
     st.markdown("---")
     
-    # Inicializamos el estado si no existe
     if "nombre_fijado" not in st.session_state:
         st.session_state["nombre_fijado"] = False
     if "usuario_actual" not in st.session_state:
         st.session_state["usuario_actual"] = ""
 
-    # El input se bloquea (disabled) si ya hay un nombre fijado
     usuario_input = st.text_input(
         "👤 Identificar este equipo como:", 
         value=st.session_state["usuario_actual"],
@@ -153,18 +150,18 @@ with st.sidebar:
         help="Una vez ingresado, no podrá ser modificado en esta sesión."
     )
 
-    # Si el usuario escribe algo y presiona Enter, fijamos el nombre
     if usuario_input.strip() != "" and not st.session_state["nombre_fijado"]:
         st.session_state["usuario_actual"] = usuario_input
         st.session_state["nombre_fijado"] = True
-        st.rerun() # Recargamos para aplicar el bloqueo inmediatamente
+        guardar_usuario_permanente(usuario_input) # Guardamos en el log
+        st.rerun()
 
     st.markdown("---")
     
-    # Solo se habilita el menú si el nombre ya fue fijado
     if st.session_state["nombre_fijado"]:
+        # Agregamos "👥 Registro de Accesos" al menú
         menu = st.radio("Seleccione una sección:", 
-                        ["📄 Información", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NÓMINA & SUA"],
+                        ["📄 Información", "👥 Registro de Accesos", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NÓMINA & SUA"],
                         key="menu_principal")
     else:
         st.warning("⚠️ Debes ingresar tu nombre para continuar.")
@@ -184,7 +181,6 @@ if menu == "🔒 Bloqueado":
     with col_bloqueo:
         st.info("### 👋 Identificación Requerida")
         st.write("Para habilitar las herramientas de administración, ingresa tu nombre completo en el panel izquierdo.")
-        st.caption("Nota: El nombre se registrará en cada archivo procesado y no podrá cambiarse hasta cerrar la sesión.")
 
 elif menu == "📄 Información":
     _, col_centro, _ = st.columns([1, 2, 1])
@@ -192,8 +188,8 @@ elif menu == "📄 Información":
         img_control_b64 = get_base64_image("Imagenes/control.png")
         if img_control_b64:
             st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{img_control_b64}" width="150"></div>', unsafe_allow_html=True)
-        st.markdown("<h1 class='centered-header'>Gestión de Contador</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p class='centered-subtext'>Última actualización global: {leer_ultima_fecha()}</p>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align:center;'>Gestión de Contador</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align:center; color:gray;'>Última actualización global: {leer_ultima_fecha()}</p>", unsafe_allow_html=True)
 
     st.divider()
 
@@ -225,22 +221,14 @@ elif menu == "📄 Información":
     st.markdown("<br><h3 style='text-align: center;'>🕒 Actividad Reciente</h3>", unsafe_allow_html=True)
     
     if st.session_state["historial_procesos"]:
-        st.markdown('<div class="historial-container">', unsafe_allow_html=True)
         for item in reversed(st.session_state["historial_procesos"]):
-            nombre_equipo = item.get('equipo', 'Desconocido')
-            st.markdown(f"""
-            <div class="historial-card">
-                <span style="color: #0d1b2a; font-weight: bold;">{item['tipo']}</span> | 
-                <b>Archivo:</b> {item['archivo']} | 
-                <span class="equipo-tag">💻 {nombre_equipo}</span> |
-                <span style="color: gray; font-size: 0.8em;">{item['hora']}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown(f"""<div class="historial-card">{item['tipo']} | <b>Archivo:</b> {item['archivo']} | <span class="equipo-tag">💻 {item.get('equipo', 'PC')}</span> | {item['hora']}</div>""", unsafe_allow_html=True)
     else:
-        _, col_info, _ = st.columns([1, 2, 1])
-        with col_info:
-            st.info("No se han registrado movimientos en la sesión actual.")
+        st.info("No se han registrado movimientos en la sesión actual.")
+
+# NUEVA SECCIÓN DE REGISTROS
+elif menu == "👥 Registro de Accesos":
+    mostrar_interfaz_registro()
 
 elif menu == "📕 IMSS Mensual":
     mostrar_interfaz_imssme()
