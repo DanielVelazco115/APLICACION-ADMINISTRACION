@@ -26,7 +26,7 @@ st.set_page_config(
 
 # --- 2. FUNCIONES DE APOYO ---
 
-# Función para obtener la hora actual de México
+# Función para obtener la hora actual de México (2:16 PM corregido)
 def obtener_hora_mexico():
     tz = pytz.timezone('America/Mexico_City')
     return datetime.now(tz)
@@ -49,7 +49,6 @@ def obtener_info_sistema():
     so = platform.system()
     nombre_pc = platform.node()
     
-    # Si detecta Linux y el nombre es 'localhost' o similar, estamos en la nube
     if so == "Linux":
         so_display = "SERVIDOR CLOUD"
         icono = "☁️"
@@ -135,6 +134,12 @@ with st.sidebar:
     st.markdown("<h3 style='text-align: center;'>Bienvenido</h3>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #a3b18a;'>Rancho Santa Rosa</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
+
+    # --- NUEVO: IDENTIFICACIÓN PERSONALIZADA ---
+    st.markdown("---")
+    usuario_id = st.text_input("👤 Identificar este equipo como:", value="Escritorio 1", help="Este nombre aparecerá en la Actividad Reciente.")
+    st.session_state["usuario_actual"] = usuario_id
+    st.markdown("---")
     
     menu = st.radio("Seleccione una sección:", 
                     ["📄 Información", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NÓMINA & SUA"],
@@ -154,19 +159,20 @@ if menu == "📄 Información":
         if img_control_b64:
             st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{img_control_b64}" width="150"></div>', unsafe_allow_html=True)
         st.markdown("<h1 class='centered-header'>Gestión de Contador</h1>", unsafe_allow_html=True)
+        # La fecha global ahora se muestra con la última guardada
         st.markdown(f"<p class='centered-subtext'>Última actualización global: {leer_ultima_fecha()}</p>", unsafe_allow_html=True)
 
     st.divider()
 
-    # OBTENER INFO DINÁMICA (3 COLUMNAS)
+    # MÉTRICAS (3 COLUMNAS)
     so_v, pc_v, _ = obtener_info_sistema()
     col_a, col_b, col_c = st.columns(3)
     
     with col_a:
         st.markdown(f"""<div class="metric-card">
-            <p style='color:gray; font-size: 0.9em;'>SISTEMA LOCAL</p>
+            <p style='color:gray; font-size: 0.9em;'>SISTEMA EN NUBE</p>
             <h2 style='color:#1b263b; margin:0;'>{so_v}</h2>
-            <small style='color:gray;'>ID: {pc_v}</small>
+            <small style='color:gray;'>Tu ID: {st.session_state["usuario_actual"]}</small>
         </div>""", unsafe_allow_html=True)
         
     with col_b:
@@ -188,6 +194,7 @@ if menu == "📄 Información":
     st.markdown('<div class="historial-container">', unsafe_allow_html=True)
     if st.session_state["historial_procesos"]:
         for item in reversed(st.session_state["historial_procesos"]):
+            # Aquí mostramos el nombre personalizado que se guardó
             nombre_equipo = item.get('equipo', 'Desconocido')
             
             st.markdown(f"""
