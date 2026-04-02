@@ -26,4 +26,7 @@ FORMAS DE LEER EL ARCHIVO
   pip install streamlit
   pip install openpyxl
   pip install psutil
+  pip install os
+  pip install pandas
+  
 
