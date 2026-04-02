@@ -26,7 +26,7 @@ st.set_page_config(
 
 # --- 2. FUNCIONES DE APOYO ---
 
-# Función para obtener la hora actual de México (2:16 PM corregido)
+# Función para obtener la hora actual de México
 def obtener_hora_mexico():
     tz = pytz.timezone('America/Mexico_City')
     return datetime.now(tz)
@@ -69,7 +69,7 @@ def leer_ultima_fecha():
             return f.read()
     return "Sin registros previos"
 
-# --- 3. ESTILOS CSS ---
+# --- 3. ESTILOS CSS ACTUALIZADOS ---
 st.markdown("""
     <style>
     .stAppDeployButton {display: none !important;}
@@ -77,7 +77,24 @@ st.markdown("""
     footer {visibility: hidden;}
     .main { background-color: #f8f9fa; }
     
+    /* Configuración de Barra Lateral */
     [data-testid="stSidebar"] { background-color: #0d1b2a; }
+    
+    /* --- SOLUCIÓN COLOR DE LETRA EN INPUT --- */
+    /* Cambia el color del texto que escribes a BLANCO */
+    [data-testid="stSidebar"] .stTextInput input {
+        color: white !important;
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        border-color: #a3b18a !important;
+    }
+    
+    /* Cambia el color de la etiqueta (label) arriba del input */
+    [data-testid="stSidebar"] .stTextInput label p {
+        color: white !important;
+        font-weight: bold;
+    }
+
+    /* Estilos generales de texto en sidebar */
     [data-testid="stSidebar"] * { color: white !important; }
     
     .centered-header { text-align: center; color: #1b263b; margin-bottom: 5px; }
@@ -114,12 +131,12 @@ st.markdown("""
         padding: 2px 8px;
         border-radius: 5px;
         font-size: 0.85em;
-        color: #495057;
+        color: #495057 !important; /* Forzar color oscuro para legibilidad en etiqueta gris */
         border: 1px solid #dee2e6;
         font-weight: bold;
     }
     .version-container {
-        text-align: center; color: #a3b18a; font-size: 0.8em;
+        text-align: center; color: #a3b18a !important; font-size: 0.8em;
         padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 30px;
     }
     </style>
@@ -135,7 +152,7 @@ with st.sidebar:
     st.markdown("<p style='text-align: center; color: #a3b18a;'>Rancho Santa Rosa</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- NUEVO: IDENTIFICACIÓN PERSONALIZADA ---
+    # --- IDENTIFICACIÓN PERSONALIZADA ---
     st.markdown("---")
     usuario_id = st.text_input("👤 Identificar este equipo como:", value="Escritorio 1", help="Este nombre aparecerá en la Actividad Reciente.")
     st.session_state["usuario_actual"] = usuario_id
@@ -159,12 +176,11 @@ if menu == "📄 Información":
         if img_control_b64:
             st.markdown(f'<div style="text-align: center;"><img src="data:image/png;base64,{img_control_b64}" width="150"></div>', unsafe_allow_html=True)
         st.markdown("<h1 class='centered-header'>Gestión de Contador</h1>", unsafe_allow_html=True)
-        # La fecha global ahora se muestra con la última guardada
         st.markdown(f"<p class='centered-subtext'>Última actualización global: {leer_ultima_fecha()}</p>", unsafe_allow_html=True)
 
     st.divider()
 
-    # MÉTRICAS (3 COLUMNAS)
+    # MÉTRICAS
     so_v, pc_v, _ = obtener_info_sistema()
     col_a, col_b, col_c = st.columns(3)
     
@@ -194,7 +210,6 @@ if menu == "📄 Información":
     st.markdown('<div class="historial-container">', unsafe_allow_html=True)
     if st.session_state["historial_procesos"]:
         for item in reversed(st.session_state["historial_procesos"]):
-            # Aquí mostramos el nombre personalizado que se guardó
             nombre_equipo = item.get('equipo', 'Desconocido')
             
             st.markdown(f"""
