@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import base64
 import socket 
+import platform
+import psutil
 from datetime import datetime
 
 # --- IMPORTACIÓN DE PÁGINAS ---
@@ -36,6 +38,14 @@ def verificar_conexion_internet():
     except OSError:
         return "Desconectado ❌"
 
+def obtener_info_sistema():
+    so = platform.system()
+    nombre_pc = platform.node()
+    icono = "🪟" if so == "Windows" else "🍎" if so == "Darwin" else "🐧"
+    if so == "Darwin": so = "macOS"
+    memoria = psutil.virtual_memory().percent
+    return f"{icono} {so}", nombre_pc, f"{memoria}%"
+
 FECHA_LOG = "fecha_modificacion.txt"
 def leer_ultima_fecha():
     if os.path.exists(FECHA_LOG):
@@ -43,7 +53,7 @@ def leer_ultima_fecha():
             return f.read()
     return "Sin registros previos"
 
-# --- 3. ESTILOS CSS (TODO CENTRADO Y MEJORADO) ---
+# --- 3. ESTILOS CSS ---
 st.markdown("""
     <style>
     .stAppDeployButton {display: none !important;}
@@ -59,12 +69,12 @@ st.markdown("""
 
     .metric-card {
         background-color: white;
-        padding: 30px;
+        padding: 20px;
         border-radius: 15px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         text-align: center;
         border-bottom: 5px solid #1b263b;
-        min-height: 180px;
+        min-height: 150px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -82,6 +92,15 @@ st.markdown("""
         border-left: 6px solid #1b263b; margin-bottom: 12px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 85%;
         text-align: center;
+    }
+    .equipo-tag {
+        background-color: #e9ecef;
+        padding: 2px 8px;
+        border-radius: 5px;
+        font-size: 0.85em;
+        color: #495057;
+        border: 1px solid #dee2e6;
+        font-weight: bold;
     }
     .version-container {
         text-align: center; color: #a3b18a; font-size: 0.8em;
@@ -122,32 +141,44 @@ if menu == "📄 Información":
 
     st.divider()
 
-    # MÉTRICAS
+    # OBTENER INFO DINÁMICA (3 COLUMNAS)
+    so_v, pc_v, _ = obtener_info_sistema()
     col_a, col_b, col_c = st.columns(3)
+    
     with col_a:
-        st.markdown('<div class="metric-card"><p style="color:gray;">ESTADO DEL SISTEMA</p><h2>Operativo ✅</h2></div>', unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-card">
+            <p style='color:gray; font-size: 0.9em;'>SISTEMA LOCAL</p>
+            <h2 style='color:#1b263b; margin:0;'>{so_v}</h2>
+            <small style='color:gray;'>ID: {pc_v}</small>
+        </div>""", unsafe_allow_html=True)
+        
     with col_b:
-        st.markdown(f'<div class="metric-card"><p style="color:gray;">SERVIDOR DE DATOS</p><h2>{verificar_conexion_internet()}</h2></div>', unsafe_allow_html=True)
+        st.markdown(f"""<div class="metric-card">
+            <p style='color:gray; font-size: 0.9em;'>CONEXIÓN DE RED</p>
+            <h2 style='color:#1b263b; margin:0;'>{verificar_conexion_internet()}</h2>
+        </div>""", unsafe_allow_html=True)
+
     with col_c:
-        # AQUÍ SE CALCULA EL NÚMERO DE PROCESOS REALES
         total_hoy = len(st.session_state["historial_procesos"])
-        color_numero = "#2e7d32" if total_hoy > 0 else "#1b263b"
-        st.markdown(f"""
-            <div class="metric-card">
-                <p style="color:gray;">PROCESOS HOY</p>
-                <h2 style="color:{color_numero}; font-size: 48px;">{total_hoy}</h2>
-            </div>
-        """, unsafe_allow_html=True)
+        color_num = "#2e7d32" if total_hoy > 0 else "#1b263b"
+        st.markdown(f"""<div class="metric-card">
+            <p style='color:gray; font-size: 0.9em;'>PROCESOS HOY</p>
+            <h2 style='color:{color_num}; margin:0; font-size: 48px;'>{total_hoy}</h2>
+        </div>""", unsafe_allow_html=True)
 
     st.markdown("<br><h3 style='text-align: center;'>🕒 Actividad Reciente</h3>", unsafe_allow_html=True)
     
     st.markdown('<div class="historial-container">', unsafe_allow_html=True)
     if st.session_state["historial_procesos"]:
         for item in reversed(st.session_state["historial_procesos"]):
+            # Buscamos el nombre del equipo en el registro, si no está ponemos 'Desconocido'
+            nombre_equipo = item.get('equipo', 'Desconocido')
+            
             st.markdown(f"""
             <div class="historial-card">
                 <span style="color: #0d1b2a; font-weight: bold;">{item['tipo']}</span> | 
                 <b>Archivo:</b> {item['archivo']} | 
+                <span class="equipo-tag">💻 {nombre_equipo}</span> |
                 <span style="color: gray; font-size: 0.8em;">{item['hora']}</span>
             </div>
             """, unsafe_allow_html=True)
