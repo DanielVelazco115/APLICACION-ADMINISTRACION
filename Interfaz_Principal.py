@@ -117,9 +117,19 @@ st.markdown("""
         border-left: 6px solid #1b263b; margin-bottom: 12px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 85%; text-align: center;
     }
-    .equipo-tag {
-        background-color: #e9ecef; padding: 2px 8px; border-radius: 5px;
-        font-size: 0.85em; color: #495057 !important; font-weight: bold;
+
+    /* Estilo personalizado para el botón de Cerrar Sesión */
+    .stButton>button {
+        width: 100%;
+        border-radius: 8px;
+        background-color: #c1121f;
+        color: white;
+        border: none;
+        transition: 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #780001;
+        color: white;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -152,16 +162,24 @@ with st.sidebar:
     if usuario_input.strip() != "" and not st.session_state["nombre_fijado"]:
         st.session_state["usuario_actual"] = usuario_input
         st.session_state["nombre_fijado"] = True
-        guardar_usuario_permanente(usuario_input) # Guardamos en el log
+        guardar_usuario_permanente(usuario_input) 
         st.rerun()
 
     st.markdown("---")
     
     if st.session_state["nombre_fijado"]:
-        # Agregamos "👥 Registro de Accesos" al menú
         menu = st.radio("Seleccione una sección:", 
                         ["📄 Información", "👥 Registro de Accesos", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ Procesamiento de Nomina"],
                         key="menu_principal")
+        
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        # --- BOTÓN DE CERRAR SESIÓN ---
+        if st.button("🔴 Cerrar Sesión"):
+            st.session_state["nombre_fijado"] = False
+            st.session_state["usuario_actual"] = ""
+            # Opcional: limpiar también el historial de la sesión si deseas
+            # st.session_state["historial_procesos"] = [] 
+            st.rerun()
     else:
         st.warning("⚠️ Debes ingresar tu nombre para continuar.")
         menu = "🔒 Bloqueado"
@@ -225,7 +243,6 @@ elif menu == "📄 Información":
     else:
         st.info("No se han registrado movimientos en la sesión actual.")
 
-# NUEVA SECCIÓN DE REGISTROS
 elif menu == "👥 Registro de Accesos":
     mostrar_interfaz_registro()
 elif menu == "📕 IMSS Mensual":
