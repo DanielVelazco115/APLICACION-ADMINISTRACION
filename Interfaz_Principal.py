@@ -160,7 +160,7 @@ with st.sidebar:
     if st.session_state["nombre_fijado"]:
         # Agregamos "👥 Registro de Accesos" al menú
         menu = st.radio("Seleccione una sección:", 
-                        ["📄 Información", "👥 Registro de Accesos", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NÓMINA & SUA"],
+                        ["📄 Información", "👥 Registro de Accesos", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ Procesamiento de Nomina"],
                         key="menu_principal")
     else:
         st.warning("⚠️ Debes ingresar tu nombre para continuar.")
@@ -228,10 +228,9 @@ elif menu == "📄 Información":
 # NUEVA SECCIÓN DE REGISTROS
 elif menu == "👥 Registro de Accesos":
     mostrar_interfaz_registro()
-
 elif menu == "📕 IMSS Mensual":
     mostrar_interfaz_imssme()
 elif menu == "📖 IMSS Bimestral":
     mostrar_interfaz_imssbi()
-elif menu == "🗓️ NÓMINA & SUA":
+elif menu == "🗓️ Procesamiento de Nomina":
     mostrar_interfaz_nomina_azu()
