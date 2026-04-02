@@ -94,7 +94,7 @@ with st.sidebar:
         label_visibility="collapsed" # Ocultamos el label para usar el diseño central
     )
     
-    st.divider()
+    #st.divider()
     
     # Versión en el pie del sidebar
     st.markdown('<div class="version-container">Versión 1.1.5</div>', unsafe_allow_html=True)
