@@ -13,8 +13,7 @@ try:
     from Paginas.IMSSBI.Interfaz_IMSSBI import mostrar_interfaz_imssbi
     from Paginas.IMSSME.Interfaz_IMSSME import mostrar_interfaz_imssme
     from Paginas.NOMINA.Interfaz_Nomina_Azu import mostrar_interfaz_nomina_azu
-    # Implementación de la nueva página de registros
-    from Paginas.UsuariosRE.Interfaz_Registro import mostrar_interfaz_registro 
+    from Paginas.USUARIOSRE.Interfaz_Registro import mostrar_interfaz_registro 
 except ImportError as e:
     st.error(f"Error al cargar los módulos de páginas: {e}")
 
