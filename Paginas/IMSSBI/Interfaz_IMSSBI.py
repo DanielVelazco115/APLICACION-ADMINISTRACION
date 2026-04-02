@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import tempfile
 import pandas as pd
+from datetime import datetime # Necesario para registrar la hora del proceso
 from . import revision
 
 def mostrar_interfaz_imssbi():
@@ -25,7 +26,7 @@ def mostrar_interfaz_imssbi():
     # 3. ÁREA DE CARGA
     st.subheader("Paso 1: Sube tus archivos")
     archivo_principal = st.file_uploader("Sube el archivo plantilla IMSS bimestral.xlsx", type=["xlsx"])
-    archivo_nombres = st.file_uploader("Sube el archivo nombres organizados.xlsx", type=["xlsx"])
+    archivo_nombres = st.file_uploader("Sube nombres el archivo organizados.xlsx", type=["xlsx"])
 
     st.info("ℹ️ Asegúrate de que ambos archivos estén cargados antes de procesar.")
 
@@ -44,22 +45,19 @@ def mostrar_interfaz_imssbi():
                 st.stop()
 
             datos_encontrados = False
-            
             for hoja in hojas_disponibles:
-                # Saltamos las primeras 5 filas (skiprows=5 lee desde la 6 en adelante)
+                # Skiprows=5 lee desde la 6 en adelante
                 df_temp = pd.read_excel(xls, sheet_name=hoja, skiprows=5)
-                
-                # Limpiamos filas completamente vacías
                 df_limpio = df_temp.dropna(how='all')
                 
                 if not df_limpio.empty:
                     datos_encontrados = True
-                    break # Si encontramos datos en una, es suficiente para continuar
+                    break 
 
             if not datos_encontrados:
                 st.error("❌ ERROR: No se detectaron datos de trabajadores en las hojas EMA/EBA.")
-                st.warning("Las hojas están vacías desde la fila 6 en adelante. Por favor, revisa tu archivo.")
-                st.stop() # Bloqueo total: No aparece botón de procesar ni descargar
+                st.warning("Las hojas están vacías desde la fila 6 en adelante.")
+                st.stop() # Bloqueo: No suma al contador si no hay datos
 
         except Exception as e:
             st.error(f"❌ Error técnico al validar filas: {e}")
@@ -69,7 +67,7 @@ def mostrar_interfaz_imssbi():
         st.success("✅ ¡Archivos validados con datos detectados!")
         st.markdown("---")
 
-        # Preparación de archivos para procesamiento
+        # Preparación de archivos
         carpeta_temp = tempfile.mkdtemp()
         ruta_principal = os.path.join(carpeta_temp, archivo_principal.name)
         ruta_nombres = os.path.join(carpeta_temp, archivo_nombres.name)
@@ -87,7 +85,18 @@ def mostrar_interfaz_imssbi():
         if btn_procesar:
             with st.spinner('Consolidando datos...'):
                 try:
+                    # Ejecución del proceso
                     ruta_salida = revision.consolidar(ruta_principal, ruta_nombres, carpeta_temp)
+                    
+                    # --- VINCULACIÓN CON EL CONTADOR DE LA PÁGINA PRINCIPAL ---
+                    if "historial_procesos" in st.session_state:
+                        registro_bi = {
+                            "tipo": "📖 IMSS Bimestral",
+                            "archivo": f"{archivo_principal.name}",
+                            "hora": datetime.now().strftime("%I:%M %p")
+                        }
+                        st.session_state["historial_procesos"].append(registro_bi)
+                    # ---------------------------------------------------------
                     
                     st.balloons() 
                     st.success("🎉 ¡Consolidación exitosa!")
