@@ -25,4 +25,5 @@ FORMAS DE LEER EL ARCHIVO
 ------------------INSTALACIONES DE LIBRERIAS IMPORTANTES-----------------
   pip install streamlit
   pip install openpyxl
+  pip install psutil
 
