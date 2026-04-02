@@ -3,7 +3,7 @@ import os
 import tempfile
 import unicodedata
 import pandas as pd
-import platform # <-- Agregado para identificar la PC
+import pytz # <-- Agregado para la zona horaria
 from datetime import datetime 
 from collections import defaultdict
 from openpyxl.utils import get_column_letter
@@ -83,19 +83,23 @@ def mostrar_interfaz_imssme():
                     # Se ejecuta el proceso real
                     ruta_salida = revision.consolidar(ruta_principal, ruta_nombres, carpeta_temp)
                     
-                    # --- BLOQUE DE REGISTRO ACTUALIZADO CON EQUIPO ---
+                    # --- BLOQUE DE REGISTRO ACTUALIZADO PARA LA NUBE ---
                     if "historial_procesos" in st.session_state:
+                        # Forzamos la hora de México para el registro
+                        tz = pytz.timezone('America/Mexico_City')
+                        ahora_mx = datetime.now(tz)
+                        
                         nuevo_registro = {
                             "tipo": "📕 IMSS Mensual",
-                            "archivo": f"{archivo_principal.name} (Procesado)",
-                            "hora": datetime.now().strftime("%I:%M %p"),
-                            "equipo": platform.node() # <-- CAPTURA EL NOMBRE DE LA MAQUINA
+                            "archivo": f"{archivo_principal.name}",
+                            "hora": ahora_mx.strftime("%I:%M %p"), # ej: 02:16 PM
+                            "equipo": st.session_state.get("usuario_actual", "Remoto") # Toma el nombre de la barra lateral
                         }
                         st.session_state["historial_procesos"].append(nuevo_registro)
                     
-                    # ACTUALIZACIÓN DE FECHA GLOBAL
+                    # ACTUALIZACIÓN DE FECHA GLOBAL (También en hora México)
                     with open("fecha_modificacion.txt", "w") as f:
-                        f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+                        f.write(ahora_mx.strftime("%d/%m/%Y %H:%M:%S"))
                     # --------------------------------------------------
 
                     st.balloons()
