@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import tempfile
 import pandas as pd
+import platform # Necesario para detectar el nombre del equipo
 from datetime import datetime # Necesario para registrar la hora del proceso
 from . import revision
 
@@ -46,7 +47,6 @@ def mostrar_interfaz_imssbi():
 
             datos_encontrados = False
             for hoja in hojas_disponibles:
-                # Skiprows=5 lee desde la 6 en adelante
                 df_temp = pd.read_excel(xls, sheet_name=hoja, skiprows=5)
                 df_limpio = df_temp.dropna(how='all')
                 
@@ -57,7 +57,7 @@ def mostrar_interfaz_imssbi():
             if not datos_encontrados:
                 st.error("❌ ERROR: No se detectaron datos de trabajadores en las hojas EMA/EBA.")
                 st.warning("Las hojas están vacías desde la fila 6 en adelante.")
-                st.stop() # Bloqueo: No suma al contador si no hay datos
+                st.stop() 
 
         except Exception as e:
             st.error(f"❌ Error técnico al validar filas: {e}")
@@ -67,7 +67,6 @@ def mostrar_interfaz_imssbi():
         st.success("✅ ¡Archivos validados con datos detectados!")
         st.markdown("---")
 
-        # Preparación de archivos
         carpeta_temp = tempfile.mkdtemp()
         ruta_principal = os.path.join(carpeta_temp, archivo_principal.name)
         ruta_nombres = os.path.join(carpeta_temp, archivo_nombres.name)
@@ -77,7 +76,6 @@ def mostrar_interfaz_imssbi():
         with open(ruta_nombres, "wb") as f:
             f.write(archivo_nombres.getbuffer())
 
-        # Botón de Procesar
         left_spacer, center_button, right_spacer = st.columns([2, 1, 2])
         with center_button:
             btn_procesar = st.button("🚀 Iniciar Procesamiento")
@@ -85,22 +83,21 @@ def mostrar_interfaz_imssbi():
         if btn_procesar:
             with st.spinner('Consolidando datos...'):
                 try:
-                    # Ejecución del proceso
                     ruta_salida = revision.consolidar(ruta_principal, ruta_nombres, carpeta_temp)
                     
-                    # --- VINCULACIÓN CON EL CONTADOR DE LA PÁGINA PRINCIPAL ---
+                    # --- VINCULACIÓN ACTUALIZADA CON EQUIPO ---
                     if "historial_procesos" in st.session_state:
                         registro_bi = {
                             "tipo": "📖 IMSS Bimestral",
                             "archivo": f"{archivo_principal.name}",
-                            "hora": datetime.now().strftime("%I:%M %p")
+                            "hora": datetime.now().strftime("%I:%M %p"),
+                            "equipo": platform.node() # <--- CAPTURA EL NOMBRE DE LA PC
                         }
                         st.session_state["historial_procesos"].append(registro_bi)
-                    # ---------------------------------------------------------
-                        # --- AGREGAR ESTO AQUÍ PARA LA FECHA GLOBAL ---
-                        with open("fecha_modificacion.txt", "w") as f:
-                            f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-                        # ----------------------------------------------
+                    
+                    with open("fecha_modificacion.txt", "w") as f:
+                        f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+                    # ------------------------------------------
                     
                     st.balloons() 
                     st.success("🎉 ¡Consolidación exitosa!")
