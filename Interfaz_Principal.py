@@ -5,6 +5,7 @@ import base64
 import socket 
 import platform
 import psutil
+import pytz # Necesario para la hora de México
 from datetime import datetime
 
 # --- IMPORTACIÓN DE PÁGINAS ---
@@ -24,6 +25,12 @@ st.set_page_config(
 )
 
 # --- 2. FUNCIONES DE APOYO ---
+
+# Función para obtener la hora actual de México
+def obtener_hora_mexico():
+    tz = pytz.timezone('America/Mexico_City')
+    return datetime.now(tz)
+
 @st.cache_data
 def get_base64_image(image_path):
     if os.path.exists(image_path):
@@ -41,10 +48,20 @@ def verificar_conexion_internet():
 def obtener_info_sistema():
     so = platform.system()
     nombre_pc = platform.node()
-    icono = "🪟" if so == "Windows" else "🍎" if so == "Darwin" else "🐧"
-    if so == "Darwin": so = "macOS"
-    memoria = psutil.virtual_memory().percent
-    return f"{icono} {so}", nombre_pc, f"{memoria}%"
+    
+    # Si detecta Linux y el nombre es 'localhost' o similar, estamos en la nube
+    if so == "Linux":
+        so_display = "SERVIDOR CLOUD"
+        icono = "☁️"
+        id_display = "Streamlit Node"
+    else:
+        so_display = so
+        icono = "🪟" if so == "Windows" else "🍎" if so == "Darwin" else "🐧"
+        id_display = nombre_pc
+
+    if so == "Darwin": so_display = "macOS"
+    
+    return f"{icono} {so_display}", id_display, "N/A"
 
 FECHA_LOG = "fecha_modificacion.txt"
 def leer_ultima_fecha():
@@ -171,7 +188,6 @@ if menu == "📄 Información":
     st.markdown('<div class="historial-container">', unsafe_allow_html=True)
     if st.session_state["historial_procesos"]:
         for item in reversed(st.session_state["historial_procesos"]):
-            # Buscamos el nombre del equipo en el registro, si no está ponemos 'Desconocido'
             nombre_equipo = item.get('equipo', 'Desconocido')
             
             st.markdown(f"""
