@@ -3,7 +3,8 @@ import os
 import tempfile
 import unicodedata
 import pandas as pd
-from datetime import datetime # Importante para la hora del registro
+import platform # <-- Agregado para identificar la PC
+from datetime import datetime 
 from collections import defaultdict
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill
@@ -58,7 +59,7 @@ def mostrar_interfaz_imssme():
             
             if not datos_encontrados:
                 st.error(f"❌ ERROR: El archivo '{archivo_principal.name}' no tiene trabajadores registrados.")
-                st.stop() # Aquí se detiene y NO suma al contador
+                st.stop() 
                 
         except Exception as e:
             st.error(f"❌ Error al validar el contenido mensual: {e}")
@@ -82,20 +83,20 @@ def mostrar_interfaz_imssme():
                     # Se ejecuta el proceso real
                     ruta_salida = revision.consolidar(ruta_principal, ruta_nombres, carpeta_temp)
                     
-                    # --- BLOQUE DE REGISTRO PARA LA PÁGINA PRINCIPAL ---
-                    # Solo llegamos aquí si 'consolidar' no falló
+                    # --- BLOQUE DE REGISTRO ACTUALIZADO CON EQUIPO ---
                     if "historial_procesos" in st.session_state:
                         nuevo_registro = {
                             "tipo": "📕 IMSS Mensual",
                             "archivo": f"{archivo_principal.name} (Procesado)",
-                            "hora": datetime.now().strftime("%I:%M %p")
+                            "hora": datetime.now().strftime("%I:%M %p"),
+                            "equipo": platform.node() # <-- CAPTURA EL NOMBRE DE LA MAQUINA
                         }
                         st.session_state["historial_procesos"].append(nuevo_registro)
+                    
+                    # ACTUALIZACIÓN DE FECHA GLOBAL
+                    with open("fecha_modificacion.txt", "w") as f:
+                        f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
                     # --------------------------------------------------
-                        # --- AGREGAR ESTO AQUÍ PARA LA FECHA GLOBAL ---
-                        with open("fecha_modificacion.txt", "w") as f:
-                            f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-                        # ----------------------------------------------
 
                     st.balloons()
                     st.success("🎉 ¡Revisión mensual terminada!")
