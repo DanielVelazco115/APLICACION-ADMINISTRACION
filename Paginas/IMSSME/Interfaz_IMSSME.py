@@ -3,12 +3,20 @@ import os
 import tempfile
 import unicodedata
 import pandas as pd
-import pytz # <-- Agregado para la zona horaria
+import pytz 
 from datetime import datetime 
 from collections import defaultdict
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, PatternFill
 from . import revision
+
+# --- NUEVA FUNCIÓN PARA LOG FÍSICO ---
+def registrar_log_fisico(usuario, accion, detalle=""):
+    """Guarda la actividad en un archivo de texto para consulta histórica."""
+    tz = pytz.timezone('America/Mexico_City')
+    ahora = datetime.now(tz).strftime("%d/%m/%Y %H:%M:%S")
+    with open("log_actividad.txt", "a", encoding="utf-8") as f:
+        f.write(f"{ahora} | USUARIO: {usuario} | ACCIÓN: {accion} | DETALLE: {detalle}\n")
 
 def mostrar_interfaz_imssme():
     # 1. ENCABEZADO Y LOGO
@@ -35,8 +43,15 @@ def mostrar_interfaz_imssme():
     # 2. ÁREA DE CARGA DE ARCHIVOS
     st.subheader("Paso 1: Sube tus archivos")
     
+    usuario_actual = st.session_state.get("usuario_actual", "Desconocido")
+    
     archivo_principal = st.file_uploader("Sube el archivo plantilla IMSS mensual.xlsx (EMA)", type=["xlsx"])
     archivo_nombres = st.file_uploader("Sube el archivo nombres organizados.xlsx (Catálogo)", type=["xlsx"])
+
+    # REGISTRO DE CARGA (Opcional, para saber qué archivos intentó subir)
+    if archivo_principal and "archivo_ema_cargado" not in st.session_state:
+        registrar_log_fisico(usuario_actual, "CARGA ARCHIVO", f"Subió EMA: {archivo_principal.name}")
+        st.session_state["archivo_ema_cargado"] = True
 
     st.info("ℹ️ Asegúrate de subir ambos archivos para comenzar.")
 
@@ -44,7 +59,6 @@ def mostrar_interfaz_imssme():
     st.subheader("Estado del Proceso")
     if archivo_principal and archivo_nombres:
         
-        # --- VALIDACIÓN DE CONTENIDO ---
         try:
             xls = pd.ExcelFile(archivo_principal)
             hojas_validar = [h for h in xls.sheet_names if "EMA" in h.upper()]
@@ -76,28 +90,29 @@ def mostrar_interfaz_imssme():
         with open(ruta_nombres, "wb") as f:
             f.write(archivo_nombres.getbuffer())
 
-        # Botón para iniciar
         if st.button("🚀 Iniciar Procesamiento Mensual"):
             with st.spinner('Procesando datos mensuales...'):
                 try:
-                    # Se ejecuta el proceso real
                     ruta_salida = revision.consolidar(ruta_principal, ruta_nombres, carpeta_temp)
                     
-                    # --- BLOQUE DE REGISTRO ACTUALIZADO PARA LA NUBE ---
+                    # --- BLOQUE DE REGISTRO DETALLADO ---
+                    tz = pytz.timezone('America/Mexico_City')
+                    ahora_mx = datetime.now(tz)
+                    
+                    # 1. Registro en Session State (para la tabla rápida de Información)
                     if "historial_procesos" in st.session_state:
-                        # Forzamos la hora de México para el registro
-                        tz = pytz.timezone('America/Mexico_City')
-                        ahora_mx = datetime.now(tz)
-                        
                         nuevo_registro = {
                             "tipo": "📕 IMSS Mensual",
                             "archivo": f"{archivo_principal.name}",
-                            "hora": ahora_mx.strftime("%I:%M %p"), # ej: 02:16 PM
-                            "equipo": st.session_state.get("usuario_actual", "Remoto") # Toma el nombre de la barra lateral
+                            "hora": ahora_mx.strftime("%I:%M %p"),
+                            "equipo": usuario_actual
                         }
                         st.session_state["historial_procesos"].append(nuevo_registro)
                     
-                    # ACTUALIZACIÓN DE FECHA GLOBAL (También en hora México)
+                    # 2. Registro en LOG FÍSICO (Para que no se borre al cerrar sesión)
+                    registrar_log_fisico(usuario_actual, "PROCESO COMPLETADO", f"Generó revisión mensual de: {archivo_principal.name}")
+
+                    # ACTUALIZACIÓN DE FECHA GLOBAL
                     with open("fecha_modificacion.txt", "w") as f:
                         f.write(ahora_mx.strftime("%d/%m/%Y %H:%M:%S"))
                     # --------------------------------------------------
@@ -115,5 +130,6 @@ def mostrar_interfaz_imssme():
                         )
                 except Exception as e:
                     st.error(f"❌ Error al procesar: {e}")
+                    registrar_log_fisico(usuario_actual, "ERROR", str(e))
     else:
         st.warning("⚠️ Esperando que subas ambos archivos Excel...")
