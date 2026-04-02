@@ -2,8 +2,8 @@ import streamlit as st
 import os
 import tempfile
 import pandas as pd
-import platform # Necesario para detectar el nombre del equipo
-from datetime import datetime # Necesario para registrar la hora del proceso
+import pytz # <-- Agregado para la zona horaria de México
+from datetime import datetime 
 from . import revision
 
 def mostrar_interfaz_imssbi():
@@ -85,18 +85,23 @@ def mostrar_interfaz_imssbi():
                 try:
                     ruta_salida = revision.consolidar(ruta_principal, ruta_nombres, carpeta_temp)
                     
-                    # --- VINCULACIÓN ACTUALIZADA CON EQUIPO ---
+                    # --- VINCULACIÓN ACTUALIZADA PARA LA NUBE ---
                     if "historial_procesos" in st.session_state:
+                        # Forzamos hora de México
+                        tz = pytz.timezone('America/Mexico_City')
+                        ahora_mx = datetime.now(tz)
+                        
                         registro_bi = {
                             "tipo": "📖 IMSS Bimestral",
                             "archivo": f"{archivo_principal.name}",
-                            "hora": datetime.now().strftime("%I:%M %p"),
-                            "equipo": platform.node() # <--- CAPTURA EL NOMBRE DE LA PC
+                            "hora": ahora_mx.strftime("%I:%M %p"),
+                            "equipo": st.session_state.get("usuario_actual", "Remoto") # <--- USA IDENTIFICADOR DE BARRA LATERAL
                         }
                         st.session_state["historial_procesos"].append(registro_bi)
                     
+                    # ACTUALIZACIÓN DE FECHA GLOBAL
                     with open("fecha_modificacion.txt", "w") as f:
-                        f.write(datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+                        f.write(ahora_mx.strftime("%d/%m/%Y %H:%M:%S"))
                     # ------------------------------------------
                     
                     st.balloons() 
