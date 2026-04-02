@@ -68,7 +68,7 @@ def leer_ultima_fecha():
             return f.read()
     return "Sin registros previos"
 
-# --- 3. ESTILOS CSS (CORREGIDO PARA VISIBILIDAD DE TEXTO) ---
+# --- 3. ESTILOS CSS (REVISADOS Y CORREGIDOS) ---
 st.markdown("""
     <style>
     .stAppDeployButton {display: none !important;}
@@ -79,66 +79,53 @@ st.markdown("""
     /* Fondo Barra Lateral */
     [data-testid="stSidebar"] { background-color: #0d1b2a; }
     
-    /* --- CORRECCIÓN DE COLORES EN SIDEBAR --- */
-    /* 1. Etiquetas y títulos en blanco */
-    [data-testid="stSidebar"] label, 
-    [data-testid="stSidebar"] .stMarkdown p, 
-    [data-testid="stSidebar"] .stRadio label { 
-        color: white !important; 
-    }
-    
-    /* 2. LO QUE ESCRIBES: Texto dentro del cuadro en color oscuro */
+    /* 1. TEXTO QUE ESCRIBES (INPUT): Debe ser oscuro para verse sobre el fondo blanco */
     [data-testid="stSidebar"] input {
-        color: #0d1b2a !important; 
-        font-weight: 500;
-    }
-    
-    /* 3. Icono de ayuda y placeholders */
-    [data-testid="stSidebar"] .stTextInput div[data-testid="InputInstructions"] {
-        color: #a3b18a !important;
+        color: #0d1b2a !important;
+        caret-color: #0d1b2a !important;
     }
 
+    /* 2. ETIQUETAS Y TEXTOS FIJOS: Todo en blanco */
+    [data-testid="stSidebar"] label p,
+    [data-testid="stSidebar"] .stMarkdown p,
+    [data-testid="stSidebar"] h3 {
+        color: white !important;
+    }
+
+    /* 3. RADIO BUTTONS (MENÚ): Forzar visibilidad de las opciones */
+    [data-testid="stSidebar"] .stRadio label div[data-testid="stMarkdownContainer"] p {
+        color: white !important;
+    }
+
+    /* 4. VERSIÓN Y PIE DE SIDEBAR */
+    .version-container {
+        text-align: center; 
+        color: #a3b18a !important; 
+        font-size: 0.8em;
+        padding: 20px; 
+        border-top: 1px solid rgba(255,255,255,0.1); 
+        margin-top: 30px;
+    }
+
+    /* 5. TARJETAS E HISTORIAL */
     .centered-header { text-align: center; color: #1b263b; margin-bottom: 5px; }
     .centered-subtext { text-align: center; color: #6c757d; margin-bottom: 30px; }
 
     .metric-card {
-        background-color: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        text-align: center;
-        border-bottom: 5px solid #1b263b;
-        min-height: 150px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
+        background-color: white; padding: 20px; border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center;
+        border-bottom: 5px solid #1b263b; min-height: 150px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
     
-    .historial-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-    }
     .historial-card {
         background-color: white; padding: 15px; border-radius: 10px;
         border-left: 6px solid #1b263b; margin-bottom: 12px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 85%;
-        text-align: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 85%; text-align: center;
     }
     .equipo-tag {
-        background-color: #e9ecef;
-        padding: 2px 8px;
-        border-radius: 5px;
-        font-size: 0.85em;
-        color: #495057 !important; /* Texto oscuro en el tag gris */
-        border: 1px solid #dee2e6;
-        font-weight: bold;
-    }
-    .version-container {
-        text-align: center; color: #a3b18a !important; font-size: 0.8em;
-        padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 30px;
+        background-color: #e9ecef; padding: 2px 8px; border-radius: 5px;
+        font-size: 0.85em; color: #495057 !important; font-weight: bold;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -155,10 +142,12 @@ with st.sidebar:
 
     # IDENTIFICACIÓN PERSONALIZADA
     st.markdown("---")
+    # El CSS forzará que el texto aquí sea oscuro (legible)
     usuario_id = st.text_input("👤 Identificar este equipo como:", value="Escritorio 1")
     st.session_state["usuario_actual"] = usuario_id
     st.markdown("---")
     
+    # El CSS forzará que estas opciones se vean blancas
     menu = st.radio("Seleccione una sección:", 
                     ["📄 Información", "📕 IMSS Mensual", "📖 IMSS Bimestral", "🗓️ NÓMINA & SUA"],
                     key="menu_principal")
@@ -208,11 +197,10 @@ if menu == "📄 Información":
 
     st.markdown("<br><h3 style='text-align: center;'>🕒 Actividad Reciente</h3>", unsafe_allow_html=True)
     
-    st.markdown('<div class="historial-container">', unsafe_allow_html=True)
     if st.session_state["historial_procesos"]:
+        st.markdown('<div class="historial-container">', unsafe_allow_html=True)
         for item in reversed(st.session_state["historial_procesos"]):
             nombre_equipo = item.get('equipo', 'Desconocido')
-            
             st.markdown(f"""
             <div class="historial-card">
                 <span style="color: #0d1b2a; font-weight: bold;">{item['tipo']}</span> | 
@@ -221,11 +209,11 @@ if menu == "📄 Información":
                 <span style="color: gray; font-size: 0.8em;">{item['hora']}</span>
             </div>
             """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     else:
         _, col_info, _ = st.columns([1, 2, 1])
         with col_info:
             st.info("No se han registrado movimientos en la sesión actual.")
-    st.markdown('</div>', unsafe_allow_html=True)
 
 elif menu == "📕 IMSS Mensual":
     mostrar_interfaz_imssme()
