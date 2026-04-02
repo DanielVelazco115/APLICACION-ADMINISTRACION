@@ -26,7 +26,6 @@ st.set_page_config(
 
 # --- 2. FUNCIONES DE APOYO ---
 
-# Función para obtener la hora actual de México
 def obtener_hora_mexico():
     tz = pytz.timezone('America/Mexico_City')
     return datetime.now(tz)
@@ -69,7 +68,7 @@ def leer_ultima_fecha():
             return f.read()
     return "Sin registros previos"
 
-# --- 3. ESTILOS CSS ACTUALIZADOS ---
+# --- 3. ESTILOS CSS (CORREGIDO PARA VISIBILIDAD DE TEXTO) ---
 st.markdown("""
     <style>
     .stAppDeployButton {display: none !important;}
@@ -77,26 +76,28 @@ st.markdown("""
     footer {visibility: hidden;}
     .main { background-color: #f8f9fa; }
     
-    /* Configuración de Barra Lateral */
+    /* Fondo Barra Lateral */
     [data-testid="stSidebar"] { background-color: #0d1b2a; }
     
-    /* --- SOLUCIÓN COLOR DE LETRA EN INPUT --- */
-    /* Cambia el color del texto que escribes a BLANCO */
-    [data-testid="stSidebar"] .stTextInput input {
-        color: white !important;
-        background-color: rgba(255, 255, 255, 0.1) !important;
-        border-color: #a3b18a !important;
+    /* --- CORRECCIÓN DE COLORES EN SIDEBAR --- */
+    /* 1. Etiquetas y títulos en blanco */
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] .stMarkdown p, 
+    [data-testid="stSidebar"] .stRadio label { 
+        color: white !important; 
     }
     
-    /* Cambia el color de la etiqueta (label) arriba del input */
-    [data-testid="stSidebar"] .stTextInput label p {
-        color: white !important;
-        font-weight: bold;
+    /* 2. LO QUE ESCRIBES: Texto dentro del cuadro en color oscuro */
+    [data-testid="stSidebar"] input {
+        color: #0d1b2a !important; 
+        font-weight: 500;
+    }
+    
+    /* 3. Icono de ayuda y placeholders */
+    [data-testid="stSidebar"] .stTextInput div[data-testid="InputInstructions"] {
+        color: #a3b18a !important;
     }
 
-    /* Estilos generales de texto en sidebar */
-    [data-testid="stSidebar"] * { color: white !important; }
-    
     .centered-header { text-align: center; color: #1b263b; margin-bottom: 5px; }
     .centered-subtext { text-align: center; color: #6c757d; margin-bottom: 30px; }
 
@@ -131,7 +132,7 @@ st.markdown("""
         padding: 2px 8px;
         border-radius: 5px;
         font-size: 0.85em;
-        color: #495057 !important; /* Forzar color oscuro para legibilidad en etiqueta gris */
+        color: #495057 !important; /* Texto oscuro en el tag gris */
         border: 1px solid #dee2e6;
         font-weight: bold;
     }
@@ -152,9 +153,9 @@ with st.sidebar:
     st.markdown("<p style='text-align: center; color: #a3b18a;'>Rancho Santa Rosa</p>", unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- IDENTIFICACIÓN PERSONALIZADA ---
+    # IDENTIFICACIÓN PERSONALIZADA
     st.markdown("---")
-    usuario_id = st.text_input("👤 Identificar este equipo como:", value="Escritorio 1", help="Este nombre aparecerá en la Actividad Reciente.")
+    usuario_id = st.text_input("👤 Identificar este equipo como:", value="Escritorio 1")
     st.session_state["usuario_actual"] = usuario_id
     st.markdown("---")
     
