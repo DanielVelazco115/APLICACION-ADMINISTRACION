@@ -180,7 +180,7 @@ with st.sidebar:
     usuario_input = st.text_input(
         "👤 Identificar este equipo como:", 
         value=st.session_state["usuario_actual"],
-        placeholder="Escribe tu nombre y presiona Enter...",
+        placeholder="Escribe tu nombre",
         disabled=st.session_state["nombre_fijado"],
         help="Una vez ingresado, no podrá ser modificado en esta sesión."
     )
