@@ -74,16 +74,47 @@ def leer_ultima_fecha():
             return f.read()
     return "Sin registros previos"
 
-# --- 3. ESTILOS CSS ---
+# --- 3. ESTILOS CSS - CENTRADO TOTAL ---
+fondo_base64 = get_base64_image("Imagenes/9060.jpg") 
+
+if fondo_base64:
+    st.markdown(f"""
+        <style>
+        /* 1. Fondo en la capa más profunda para evitar cortes */
+        [data-testid="stAppViewContainer"] {{
+            background-color: #f8f9fa !important;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), 
+                              url("data:image/jpg;base64,{fondo_base64}") !important;
+            
+            /* Ajuste manual de posición: 60% a la derecha para compensar la sidebar */
+            background-position: 130% center !important; 
+            background-repeat: no-repeat !important;
+            background-size: 1910px auto !important; /* Control total del tamaño en píxeles */
+            background-attachment: fixed !important;
+        }}
+
+        /* 2. Forzamos transparencia en las capas que generan los cuadros blancos */
+        [data-testid="stMainViewContainer"], 
+        .main, 
+        .block-container {{
+            background: transparent !important;
+            background-color: transparent !important;
+        }}
+
+        /* 3. Eliminamos sombras o bordes que dividan la pantalla */
+        [data-testid="stHeader"] {{
+            background: transparent !important;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
 st.markdown("""
     <style>
     .stAppDeployButton {display: none !important;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    .main { background-color: #f8f9fa; }
     
     [data-testid="stSidebar"] { background-color: #0d1b2a; }
-    
     [data-testid="stSidebar"] input { color: #0d1b2a !important; caret-color: #0d1b2a !important; }
 
     [data-testid="stSidebar"] input:disabled {
@@ -112,13 +143,6 @@ st.markdown("""
         display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
     
-    .historial-card {
-        background-color: white; padding: 15px; border-radius: 10px;
-        border-left: 6px solid #1b263b; margin-bottom: 12px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 85%; text-align: center;
-    }
-
-    /* Estilo personalizado para el botón de Cerrar Sesión */
     .stButton>button {
         width: 100%;
         border-radius: 8px;
