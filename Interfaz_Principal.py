@@ -31,6 +31,9 @@ def obtener_hora_mexico():
     tz = pytz.timezone('America/Mexico_City')
     return datetime.now(tz)
 
+def obtener_clima_ficticio():
+    return "☀️ 28°C - Rancho Santa Rosa, MX"
+
 def guardar_usuario_permanente(nombre):
     """Guarda el nombre en el archivo log físico"""
     ahora = obtener_hora_mexico().strftime("%d/%m/%Y %H:%M:%S")
@@ -42,6 +45,13 @@ def get_base64_image(image_path):
     if os.path.exists(image_path):
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
+    return None
+
+def obtener_pdf_base64(pdf_path):
+    """Convierte el PDF a Base64 para el menú flotante"""
+    if os.path.exists(pdf_path):
+        with open(pdf_path, "rb") as f:
+            return base64.b64encode(f.read()).decode('utf-8')
     return None
 
 def verificar_conexion_internet():
@@ -74,93 +84,77 @@ def leer_ultima_fecha():
             return f.read()
     return "Sin registros previos"
 
-# --- 3. ESTILOS CSS - CENTRADO TOTAL ---
+# --- 3. LÓGICA DE RECURSOS (PDF Y FONDO) ---
+# Cambia esta ruta si el nombre de tu manual es diferente
+nombre_archivo_pdf = "Documentos/OL3000RTXL2U.pdf"
+pdf_b64 = obtener_pdf_base64(nombre_archivo_pdf) 
+link_pdf = f'data:application/pdf;base64,{pdf_b64}' if pdf_b64 else "#"
+
 fondo_base64 = get_base64_image("Imagenes/Log2.jpg") 
 
+# --- 4. ESTILOS CSS - TU DISEÑO ORIGINAL + MENÚ FLOTANTE ---
 if fondo_base64:
     st.markdown(f"""
         <style>
-        /* 1. Fondo en la capa más profunda para evitar cortes */
+        /* TUS ESTILOS ORIGINALES DE FONDO */
         [data-testid="stAppViewContainer"] {{
             background-color: #f8f9fa !important;
             background-image: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), 
                               url("data:image/jpg;base64,{fondo_base64}") !important;
-            
-            /* Ajuste manual de posición: 60% a la derecha para compensar la sidebar */
             background-position: 130% center !important; 
             background-repeat: no-repeat !important;
-            background-size: 1910px auto !important; /* Control total del tamaño en píxeles */
+            background-size: 1910px auto !important;
             background-attachment: fixed !important;
         }}
 
-        /* 2. Forzamos transparencia en las capas que generan los cuadros blancos */
-        [data-testid="stMainViewContainer"], 
-        .main, 
-        .block-container {{
+        [data-testid="stMainViewContainer"], .main, .block-container {{
             background: transparent !important;
             background-color: transparent !important;
         }}
 
-        /* 3. Eliminamos sombras o bordes que dividan la pantalla */
-        [data-testid="stHeader"] {{
-            background: transparent !important;
+        [data-testid="stHeader"] {{ background: transparent !important; }}
+        .stAppDeployButton {{display: none !important;}}
+        #MainMenu {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        
+        [data-testid="stSidebar"] {{ background-color: #0d1b2a; }}
+        [data-testid="stSidebar"] input {{ color: #0d1b2a !important; caret-color: #0d1b2a !important; }}
+        [data-testid="stSidebar"] label p, [data-testid="stSidebar"] .stMarkdown p, [data-testid="stSidebar"] h3 {{ color: white !important; }}
+        .version-container {{ text-align: center; color: #a3b18a !important; font-size: 0.8em; padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 30px; }}
+        .metric-card {{ background-color: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; border-bottom: 5px solid #1b263b; min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; }}
+        .stButton>button {{ width: 100%; border-radius: 8px; background-color: #c1121f; color: white; border: none; transition: 0.3s; display: block; margin: 0 auto; }}
+        .stButton>button:hover {{ background-color: #780001; color: white; }}
+
+        /* NUEVO: ESTILOS DEL MENÚ FLOTANTE (AISLADOS) */
+        .floating-container-rsr {{
+            position: fixed; right: -160px; top: 25%; transition: 0.3s ease-in-out;
+            padding: 15px; width: 200px; background-color: #1b263b;
+            color: white !important; border-radius: 10px 0 0 10px; z-index: 999999;
+            box-shadow: -2px 2px 10px rgba(0,0,0,0.3); font-family: sans-serif;
         }}
+        .floating-container-rsr:hover {{ right: 0; }}
+        .rsr-tab {{
+            position: absolute; left: -40px; top: 0; background: #1b263b;
+            width: 40px; height: 50px; display: flex; align-items: center;
+            justify-content: center; border-radius: 10px 0 0 10px; cursor: pointer; font-size: 20px;
+        }}
+        .floating-container-rsr a {{
+            color: #a3b18a !important; display: block; margin: 12px 0;
+            text-decoration: none !important; font-size: 13px; font-weight: bold;
+        }}
+        .floating-container-rsr a:hover {{ color: white !important; }}
         </style>
+
+        <div class="floating-container-rsr">
+            <div class="rsr-tab">🛠️</div>
+            <p style="margin:0; font-size:14px; font-weight:bold; text-align:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Herramientas</p>
+            <a href="{link_pdf}" download="Manual_Operacion_RSR.pdf">📂 Descargar Manual</a>
+            <a href="https://www.imss.gob.mx/" target="_blank">🏥 Portal IMSS</a>
+            <a href="https://wa.me/tu_numero" target="_blank">👨‍💻 Soporte TICs</a>
+        </div>
     """, unsafe_allow_html=True)
 
-st.markdown("""
-    <style>
-    .stAppDeployButton {display: none !important;}
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    
-    [data-testid="stSidebar"] { background-color: #0d1b2a; }
-    [data-testid="stSidebar"] input { color: #0d1b2a !important; caret-color: #0d1b2a !important; }
-
-    [data-testid="stSidebar"] input:disabled {
-        background-color: #e9ecef !important;
-        color: #6c757d !important;
-        cursor: not-allowed;
-    }
-
-    [data-testid="stSidebar"] label p, [data-testid="stSidebar"] .stMarkdown p, [data-testid="stSidebar"] h3 {
-        color: white !important;
-    }
-
-    [data-testid="stSidebar"] .stRadio label div[data-testid="stMarkdownContainer"] p {
-        color: white !important;
-    }
-
-    .version-container {
-        text-align: center; color: #a3b18a !important; font-size: 0.8em;
-        padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 30px;
-    }
-
-    .metric-card {
-        background-color: white; padding: 20px; border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center;
-        border-bottom: 5px solid #1b263b; min-height: 150px;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-    }
-    
-    .stButton>button {
-        width: 100%;
-        border-radius: 8px;
-        background-color: #c1121f;
-        color: white;
-        border: none;
-        transition: 0.3s;
-        display: block;
-        margin: 0 auto;
-    }
-    .stButton>button:hover {
-        background-color: #780001;
-        color: white;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 4. BARRA LATERAL ---
+# --- 5. BARRA LATERAL (TU SIDEBAR ORIGINAL) ---
 with st.sidebar:
     logo_b64 = get_base64_image("Imagenes/SR.png")
     if logo_b64:
@@ -200,8 +194,6 @@ with st.sidebar:
         
         st.markdown("<br><br>", unsafe_allow_html=True)
         
-        # --- BOTÓN DE CERRAR SESIÓN CENTRADO ---
-        # Usamos columnas para dejar espacio a los lados y centrar el botón
         col_side1, col_side2, col_side3 = st.columns([0.5, 2, 0.5])
         with col_side2:
             if st.button("🔴 Cerrar Sesión", use_container_width=True):
@@ -214,11 +206,15 @@ with st.sidebar:
     
     st.markdown('<div class="version-container">Versión 1.1.5<br>TICS & Administración</div>', unsafe_allow_html=True)
 
-# --- 5. INICIALIZAR SESSION STATE HISTORIAL ---
-if "historial_procesos" not in st.session_state:
-    st.session_state["historial_procesos"] = []
+# --- 6. CABECERA: FECHA, HORA Y CLIMA ---
+ahora_mx = obtener_hora_mexico()
+st.markdown(f"""
+    <div style="text-align: right; color: #1b263b; font-size: 1.1em; font-weight: bold; padding: 10px; margin-bottom: -15px;">
+        {ahora_mx.strftime('%A, %d de %B de %Y')} | {ahora_mx.strftime('%I:%M %p')} | {obtener_clima_ficticio()}
+    </div>
+""", unsafe_allow_html=True)
 
-# --- 6. NAVEGACIÓN ---
+# --- 7. NAVEGACIÓN (TU LÓGICA ORIGINAL) ---
 
 if menu == "🔒 Bloqueado":
     st.markdown("<br><br>", unsafe_allow_html=True)
@@ -228,6 +224,9 @@ if menu == "🔒 Bloqueado":
         st.write("Para habilitar las herramientas de administración, ingresa tu nombre completo en el panel izquierdo.")
 
 elif menu == "📄 Información":
+    if "historial_procesos" not in st.session_state:
+        st.session_state["historial_procesos"] = []
+        
     _, col_centro, _ = st.columns([1, 2, 1])
     with col_centro:
         img_control_b64 = get_base64_image("Imagenes/control.png")
@@ -238,7 +237,7 @@ elif menu == "📄 Información":
 
     st.divider()
 
-    # MÉTRICAS
+    # MÉTRICAS ORIGINALES
     so_v, pc_v, _ = obtener_info_sistema()
     col_a, col_b, col_c = st.columns(3)
     
@@ -256,7 +255,7 @@ elif menu == "📄 Información":
         </div>""", unsafe_allow_html=True)
 
     with col_c:
-        total_hoy = len(st.session_state["historial_procesos"])
+        total_hoy = len(st.session_state.get("historial_procesos", []))
         color_num = "#2e7d32" if total_hoy > 0 else "#1b263b"
         st.markdown(f"""<div class="metric-card">
             <p style='color:gray; font-size: 0.9em;'>PROCESOS HOY</p>
@@ -265,9 +264,9 @@ elif menu == "📄 Información":
 
     st.markdown("<br><h3 style='text-align: center;'>🕒 Actividad Reciente</h3>", unsafe_allow_html=True)
     
-    if st.session_state["historial_procesos"]:
+    if st.session_state.get("historial_procesos"):
         for item in reversed(st.session_state["historial_procesos"]):
-            st.markdown(f"""<div class="historial-card">{item['tipo']} | <b>Archivo:</b> {item['archivo']} | <span class="equipo-tag">💻 {item.get('equipo', 'PC')}</span> | {item['hora']}</div>""", unsafe_allow_html=True)
+            st.markdown(f"""<div style="background:white; padding:10px; border-radius:8px; margin-bottom:5px; border-left:5px solid #1b263b; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">{item['tipo']} | <b>Archivo:</b> {item['archivo']} | <span style="color:#1b263b;">💻 {item.get('equipo', 'PC')}</span> | {item['hora']}</div>""", unsafe_allow_html=True)
     else:
         st.info("No se han registrado movimientos en la sesión actual.")
 
