@@ -75,7 +75,7 @@ def leer_ultima_fecha():
     return "Sin registros previos"
 
 # --- 3. ESTILOS CSS - CENTRADO TOTAL ---
-fondo_base64 = get_base64_image("Imagenes/CB.jpg") 
+fondo_base64 = get_base64_image("Imagenes/9060.jpg") 
 
 if fondo_base64:
     st.markdown(f"""
